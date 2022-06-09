@@ -7,10 +7,12 @@ namespace CppCodeGeneratorSubsystem
 {
     static class Repository
     {
+        // Словарь доступных для генерации типов упорядоченных по именам файлов являющихся ключами
         public static FilesDictionary AvailableTypes = new FilesDictionary();
         
     }
 
+    // Делаем словарь поудобнее
     public class FilesDictionary : Dictionary<string, List<Element>>
     {
         public List<Element> Value { set; get; } = new List<Element>();

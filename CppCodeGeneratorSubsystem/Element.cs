@@ -14,6 +14,7 @@ namespace CppCodeGeneratorSubsystem
 
         public Element(string Format, params string[] Types)
         {
+            // Если есть простарнство имен, сохраняем его отдельно
             var firstType = Types[0].Split("::", 2);
             if (firstType.Length > 1)
             {
@@ -21,8 +22,10 @@ namespace CppCodeGeneratorSubsystem
                 Types[0] = firstType[1];
             }
 
+            // Имя типа без пространства имен
             Name = Types[0];
 
+            // Если есть шаблон, сохраняем его отдельно
             if (Types[0].Contains("<"))
             {
                 Types[0] = Types[0].Split("<", 2)[0];
@@ -36,13 +39,16 @@ namespace CppCodeGeneratorSubsystem
         public override string ToString()
         { 
             string template = "";
+
+            // Если есть шаблон, формируем
             if (!string.IsNullOrEmpty(Template))
             template = "tempalate <" + string.Join(", ", Template.Trim('<', '>').Split(",").Select(t => "typename " + t).ToArray()) + "> ";
-
+            // лепим его спереди
             return template + String.Format(Format, Types);
         }
     }
 
+    // Формирование сигнатур типов
     public class Format
     {
         public static string Class = "class {0};";

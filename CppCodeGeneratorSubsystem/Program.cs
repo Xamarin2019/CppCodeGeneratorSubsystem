@@ -23,7 +23,7 @@ namespace CppCodeGeneratorSubsystem
                 //Declarations = { "callback", "struct1<T1,T2,T3>", "my_library::callback", "my_library::struct1<T1,T2,T3>" }
             };
 
-            Console.WriteLine(compiler.BildOutput());
+            Console.WriteLine(compiler.BuildOutput());
         }
     }
 }
