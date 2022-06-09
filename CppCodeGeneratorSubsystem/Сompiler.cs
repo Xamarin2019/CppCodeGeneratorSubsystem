@@ -18,7 +18,7 @@ namespace CppCodeGeneratorSubsystem
 
         List<string> IncludeOutput { get; set; } = new List<string>();
 
-        IEnumerable<IGrouping<string, Element>> DeclarationsOutput { get; set; }
+        List<Element> DeclarationsOutput { get; set; }
  
         public void Compile()
         {
@@ -34,7 +34,7 @@ namespace CppCodeGeneratorSubsystem
         }
 
         // Метод для получения элементов предварительные объявления с группированные по постранствам имен
-        IEnumerable<IGrouping<string, Element>> GetDeclarations (IEnumerable<String> Declarations)
+        List<Element> GetDeclarations (IEnumerable<String> Declarations) // IEnumerable<IGrouping<string, Element>> 
         {
             List<Element> elements = new List<Element>();
 
@@ -65,20 +65,19 @@ namespace CppCodeGeneratorSubsystem
                 elements.Add(element);
             }
 
+
+            // Проверяем вложенные типы
+            foreach (var element in elements.ToList())
+            {
+                // Если вложенные типы требуют включения, присоединяем их в начало
+                elements = GetDeclarations(element.Types.Skip(1)).Concat(elements).ToList();        
+            }
+
+
             // Немного упорядочиваем
             var elementGroups = elements.GroupBy(e => e.Namespace).OrderBy(g => g.Key) as IEnumerable<IGrouping<string, Element>>;
 
-            // Проверяем вложенные типы
-            foreach (var group in elementGroups)
-            {
-                foreach (var element in group)
-                {
-                    // Если вложенные типы требуют включения, присоединяем их в начало
-                    elementGroups = GetDeclarations(element.Types.Skip(1)).Concat(elementGroups);
-                }
-            }
-
-            return elementGroups;
+            return elements;
         }
 
         // Генерация кода С++
@@ -99,7 +98,7 @@ namespace CppCodeGeneratorSubsystem
             output += Environment.NewLine;
 
             // Генерируем предварительные объявления 
-            foreach (var name in DeclarationsOutput)
+            foreach (var name in DeclarationsOutput.GroupBy(e => e.Namespace).OrderBy(g => g.Key) as IEnumerable<IGrouping<string, Element>>)
             {
                 // Если имеется пространство имен, делаем обертку для него
                 if (name.Key != null)
