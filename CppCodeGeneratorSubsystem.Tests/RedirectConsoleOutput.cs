@@ -8,22 +8,22 @@ namespace CppCodeGeneratorSubsystem.Tests
 {
     public class RedirectConsoleOutput : IDisposable
     {
-        private readonly ITestOutputHelper _output;
-        private readonly TextWriter _originalOut;
-        private readonly TextWriter _textWriter;
+        private readonly ITestOutputHelper output;
+        private readonly TextWriter originalOut;
+        protected readonly TextWriter textWriter;
 
         public RedirectConsoleOutput(ITestOutputHelper output)
         {
-            _output = output;
-            _originalOut = Console.Out;
-            _textWriter = new StringWriter();
-            Console.SetOut(_textWriter);
+            this.output = output;
+            originalOut = Console.Out;
+            textWriter = new StringWriter();
+            Console.SetOut(textWriter);
         }
 
         public void Dispose()
         {
-            _output.WriteLine(_textWriter.ToString());
-            Console.SetOut(_originalOut);
+            output.WriteLine(textWriter.ToString());
+            Console.SetOut(originalOut);
         }
     }
 }

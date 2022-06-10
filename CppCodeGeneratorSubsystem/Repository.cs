@@ -12,7 +12,21 @@ namespace CppCodeGeneratorSubsystem
 
         // Словарь доступных для генерации типов упорядоченных по именам файлов являющихся ключами
         public FilesDictionary AvailableTypes = new FilesDictionary();
-        
+
+        public static Repository GetRepository()
+        {
+            Repository Repository = new Repository();
+            Repository.AvailableTypes["<string>"].Add(new Element(Format.Class, "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library1::callback1", "std::string", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library2::callback1", "my_library1::callback1", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library1::callback2", "my_library2::callback1", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library2::callback2", "my_library1::callback2", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library1::callback3", "my_library2::callback2", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library2::callback3", "my_library1::callback3", "std::string"));
+
+            return Repository;
+        }
+
     }
 
     // Делаем словарь поудобнее
