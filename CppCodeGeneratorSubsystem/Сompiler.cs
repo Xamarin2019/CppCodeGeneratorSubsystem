@@ -29,8 +29,8 @@ namespace CppCodeGeneratorSubsystem
             // Здесь добавляю заголовки для включения
             foreach (var item in Includes)
             {
-                var tmp = Repository.AvailableTypes.Where(d => d.Value.Exists(e => e.QualifiedName == item)).FirstOrDefault().Key;
-                IncludesOutput.Add(tmp);
+                var fileName = Repository.AvailableTypes.Where(d => d.Value.Exists(e => e.QualifiedName == item)).FirstOrDefault().Key;
+                IncludesOutput.Add(fileName);
             }
 
             // Здесь добавляю элементы предварительные объявления с группированные по постранствам имен
@@ -43,10 +43,10 @@ namespace CppCodeGeneratorSubsystem
             foreach (var item in Declarations)
             {
 
-                var tmp = Repository.AvailableTypes.Where(d => d.Value.Exists(e => e.QualifiedName == item)).FirstOrDefault().Key;
+                var fileName = Repository.AvailableTypes.Where(d => d.Value.Exists(e => e.QualifiedName == item)).FirstOrDefault().Key;
 
                 // Если уже есть включение, пропускаем
-                if (IncludesOutput.Contains(tmp))
+                if (IncludesOutput.Contains(fileName))
                 {
                     continue;
                 }
@@ -54,7 +54,7 @@ namespace CppCodeGeneratorSubsystem
                 // Если содержится в списке для обязательного включения, делаем включение и переходим на следующую итерацию
                 if (Repository.IncludeOnlyTypes.Contains(item))
                 {
-                    IncludesOutput.Add(tmp);
+                    IncludesOutput.Add(fileName);
                     continue;
                 }
 
@@ -63,8 +63,10 @@ namespace CppCodeGeneratorSubsystem
                                                        .Where(l => l.Exists(e => e.QualifiedName == item))
                                                        .FirstOrDefault()?.FirstOrDefault(e => e.QualifiedName == item);
 
+                // Если типа нет в репозитории, выбрасывам исключение
                 if (element == null) throw new NullReferenceException("Typewas not found in the repository!");
 
+                // Если тип уже попадался, пропускаем
                 if (DeclarationsOutput.Contains(element)) continue;
 
                 // Пробежимся по вложенным типам
