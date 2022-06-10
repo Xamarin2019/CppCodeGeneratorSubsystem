@@ -9,7 +9,7 @@ namespace CppCodeGeneratorSubsystem
         public string[] Types { get; set; }
         public string Format { get; set; }
         public string Name { get; set; }
-        public string Template { get; set; }
+        public string Template { get; set; } = "";
         public string QualifiedName => Namespace != null ? Namespace + "::" + Name : Name;
 
         public Element(string Format, params string[] Types)
@@ -45,6 +45,38 @@ namespace CppCodeGeneratorSubsystem
             template = "tempalate <" + string.Join(", ", Template.Trim('<', '>').Split(",").Select(t => "typename " + t).ToArray()) + "> ";
             // лепим его спереди
             return template + String.Format(Format, Types);
+        }
+
+        public override bool Equals(object obj)
+        {
+            var item = obj as Element;
+
+            if (item == null)
+            {
+                return false;
+            }
+
+            bool result = Namespace.Equals(item.Namespace)
+                       && Format.Equals(item.Format)
+                       && Name.Equals(item.Name)
+                       && Template.Equals(item.Template)
+                       && QualifiedName.Equals(item.QualifiedName);
+
+            if (Types.Length == item.Types.Length)
+            {
+                for (int i = 0; i < Types.Length; i++) if (Types[i] != item.Types[i]) result = false;
+             }
+            else
+            {
+                result = false;
+            }
+
+            return result;
+        }
+
+        public override int GetHashCode()
+        {
+            return (Format + string.Join(",",Types)).GetHashCode();
         }
     }
 

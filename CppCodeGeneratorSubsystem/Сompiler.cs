@@ -16,36 +16,33 @@ namespace CppCodeGeneratorSubsystem
         //forward declarations input
         public List<string> Declarations { get; set; } = new List<string>();
 
-        List<string> IncludeOutput { get; set; } = new List<string>();
+        List<string> IncludesOutput { get; set; } = new List<string>();
 
-        List<Element> DeclarationsOutput { get; set; }
- 
+        List<Element> DeclarationsOutput { get; set; } = new List<Element>();
+
         public void Compile()
         {
             // Здесь добавляю заголовки для включения
             foreach (var item in Includes)
             {
                 var tmp = Repository.AvailableTypes.Where(d => d.Value.Exists(e => e.QualifiedName == item)).FirstOrDefault().Key;
-                IncludeOutput.Add(tmp);
+                IncludesOutput.Add(tmp);
             }
 
             // Здесь добавляю элементы предварительные объявления с группированные по постранствам имен
-            DeclarationsOutput = GetDeclarations(Declarations);
+            GetElements(Declarations);
         }
 
-        // Метод для получения элементов предварительные объявления с группированные по постранствам имен
-        List<Element> GetDeclarations (IEnumerable<String> Declarations) // IEnumerable<IGrouping<string, Element>> 
+        
+        void GetElements(IEnumerable<String> Declarations)
         {
-            List<Element> elements = new List<Element>();
-
-            // Проверяем входной список для предварительных объявлений
             foreach (var item in Declarations)
             {
 
                 var tmp = Repository.AvailableTypes.Where(d => d.Value.Exists(e => e.QualifiedName == item)).FirstOrDefault().Key;
 
                 // Если уже есть включение, пропускаем
-                if (IncludeOutput.Contains(tmp))
+                if (IncludesOutput.Contains(tmp))
                 {
                     continue;
                 }
@@ -53,7 +50,7 @@ namespace CppCodeGeneratorSubsystem
                 // Если содержится в списке для обязательного включения, делаем включение и переходим на следующую итерацию
                 if (includeOnly.Contains(item))
                 {
-                    IncludeOutput.Add(tmp);
+                    IncludesOutput.Add(tmp);
                     continue;
                 }
 
@@ -61,35 +58,39 @@ namespace CppCodeGeneratorSubsystem
                 var element = Repository.AvailableTypes.Select(d => d.Value)
                                                        .Where(l => l.Exists(e => e.QualifiedName == item))
                                                        .FirstOrDefault()?.FirstOrDefault(e => e.QualifiedName == item);
+
+                if (element == null) throw new NullReferenceException("Typewas not found in the repository!");
+
+                if (DeclarationsOutput.Contains(element)) continue;
+
                 // и добавляем его в выходной список
-                elements.Add(element);
+
+
+                GetElements(element.Types.Skip(1));
+
+                if (element.Namespace == null)
+                {
+                    DeclarationsOutput = new Element[]{ element }.Concat(DeclarationsOutput).ToList();
+                }
+                else
+                {
+                    DeclarationsOutput.Add(element);
+                }
+
             }
-
-
-            // Проверяем вложенные типы
-            foreach (var element in elements.ToList())
-            {
-                // Если вложенные типы требуют включения, присоединяем их в начало
-                elements = GetDeclarations(element.Types.Skip(1)).Concat(elements).ToList();        
-            }
-
-
-            // Немного упорядочиваем
-            var elementGroups = elements.GroupBy(e => e.Namespace).OrderBy(g => g.Key) as IEnumerable<IGrouping<string, Element>>;
-
-            return elements;
         }
 
+        
         // Генерация кода С++
         public string BuildOutput() 
         {
+            string output = "";
+
             // Получаем списки включений и предварительных объявлений
             Compile();
-
-            string output = "";
             
             // Сортируем и удаляем дубликаты из списка включений
-            foreach (var item in IncludeOutput.Distinct().OrderBy(k => k))
+            foreach (var item in IncludesOutput.Distinct().OrderBy(k => k))
             {
                 // и добавляем в выходной текст
                 output += $"#include {item}" + Environment.NewLine;
@@ -98,28 +99,30 @@ namespace CppCodeGeneratorSubsystem
             output += Environment.NewLine;
 
             // Генерируем предварительные объявления 
-            foreach (var name in DeclarationsOutput.GroupBy(e => e.Namespace).OrderBy(g => g.Key) as IEnumerable<IGrouping<string, Element>>)
+            string currentNmespace = null;
+            foreach (var element in DeclarationsOutput)
             {
                 // Если имеется пространство имен, делаем обертку для него
-                if (name.Key != null)
+                if (currentNmespace != null && currentNmespace != element.Namespace) output += "}" + Environment.NewLine + Environment.NewLine;
+                if (element.Namespace != null)
                 {
-                    output += "namespace " + name.Key + Environment.NewLine + "{" + Environment.NewLine;
-                    foreach (var item in name)
-                    {
-                        output += $"    {item}" + Environment.NewLine;
-                    }
-                    output += "}" + Environment.NewLine + Environment.NewLine;
+                    if (currentNmespace != element.Namespace) output +=  "namespace " + element.Namespace + Environment.NewLine + "{" + Environment.NewLine;
+ 
+                    output += $"    {element}" + Environment.NewLine;
                 }
                 else
                 {
-                    foreach (var item in name)
-                    {
-                        output += $"{item}" + Environment.NewLine;
-                    }
-                    output += Environment.NewLine;
+                   output += $"{element}" + Environment.NewLine;
+ 
+                   output += Environment.NewLine;
                 }
+                
+                currentNmespace = element.Namespace;
+
+               
 
             }
+            if (currentNmespace != null) output += "}" + Environment.NewLine + Environment.NewLine;
 
             return output;
         }
