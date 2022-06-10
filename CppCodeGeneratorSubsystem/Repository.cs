@@ -5,10 +5,13 @@ using System.Text;
 
 namespace CppCodeGeneratorSubsystem
 {
-    static class Repository
+    public class Repository
     {
+        // Типы для включения
+        public string[] IncludeOnlyTypes = new string[] { "std::string" };
+
         // Словарь доступных для генерации типов упорядоченных по именам файлов являющихся ключами
-        public static FilesDictionary AvailableTypes = new FilesDictionary();
+        public FilesDictionary AvailableTypes = new FilesDictionary();
         
     }
 

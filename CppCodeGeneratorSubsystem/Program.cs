@@ -7,6 +7,8 @@ namespace CppCodeGeneratorSubsystem
     {
         static void Main(string[] args)
         {
+            Repository Repository = new Repository();
+
             //Repository.AvailableTypes["<string>"].Add(new Element(Format.Class, "std::string"));
             //Repository.AvailableTypes["\"my_class.h\""].Add(new Element(Format.Class, "my_class"));
             //Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library::callback", "my_class", "std::string"));
@@ -36,7 +38,7 @@ namespace CppCodeGeneratorSubsystem
             Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library1::callback3", "my_library2::callback2", "std::string"));
             Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library2::callback3", "my_library1::callback3", "std::string"));
 
-            Сompiler compiler = new Сompiler()
+            Сompiler compiler = new Сompiler(Repository)
             {
                 Declarations = { "my_library1::callback1", "my_library2::callback1", "my_library1::callback2", "my_library2::callback2", "my_library1::callback3", "my_library2::callback3" }
             };

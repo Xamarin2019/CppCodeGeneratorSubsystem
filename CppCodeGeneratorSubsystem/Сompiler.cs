@@ -7,9 +7,7 @@ namespace CppCodeGeneratorSubsystem
 {
     public class Сompiler
     {
-        //include only types
-        string[] includeOnly = new string[] { "std::string" };
-
+        public Repository Repository { get; set; }
         //includes input
         public List<string> Includes { get; set; } = new List<string>();
 
@@ -19,6 +17,12 @@ namespace CppCodeGeneratorSubsystem
         List<string> IncludesOutput { get; set; } = new List<string>();
 
         List<Element> DeclarationsOutput { get; set; } = new List<Element>();
+
+        public Сompiler(Repository repository)
+        {
+            Repository = repository;
+        }
+
 
         public void Compile()
         {
@@ -48,7 +52,7 @@ namespace CppCodeGeneratorSubsystem
                 }
 
                 // Если содержится в списке для обязательного включения, делаем включение и переходим на следующую итерацию
-                if (includeOnly.Contains(item))
+                if (Repository.IncludeOnlyTypes.Contains(item))
                 {
                     IncludesOutput.Add(tmp);
                     continue;
@@ -63,13 +67,13 @@ namespace CppCodeGeneratorSubsystem
 
                 if (DeclarationsOutput.Contains(element)) continue;
 
-                // и добавляем его в выходной список
-
-
+                // Пробежимся по вложенным типам
                 GetElements(element.Types.Skip(1));
 
+                // И добавляем к ним зависимый тип
                 if (element.Namespace == null)
                 {
+                    // Лучше переместить в формирование строки
                     DeclarationsOutput = new Element[]{ element }.Concat(DeclarationsOutput).ToList();
                 }
                 else
