@@ -5,12 +5,12 @@ namespace CppCodeGeneratorSubsystem
 {
     public class Element
     {
-        public string Namespace { get; set; }
+        public string Namespace { get; set; } = "";
         public string[] Types { get; set; }
         public string Format { get; set; }
         public string Name { get; set; }
         public string Template { get; set; } = "";
-        public string QualifiedName => Namespace != null ? Namespace + "::" + Name : Name;
+        public string QualifiedName => string.IsNullOrEmpty(Namespace) ? Name :  Namespace + "::" + Name;
 
         public Element(string Format, params string[] Types)
         {

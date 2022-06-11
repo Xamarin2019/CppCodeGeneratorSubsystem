@@ -18,11 +18,11 @@ namespace CppCodeGeneratorSubsystem.Tests
 
                                 namespace my_library
                                 {
-                                    tempalate<typename T1, typename T2, typename T3> struct struct1;
                                     using callback = my_class* (*) (std::string);
+                                    tempalate<typename T1, typename T2, typename T3> struct struct1;
                                 }";
 
-            Repository Repository = Repository.GetRepository();
+            Repository Repository = new Repository();
             Repository.AvailableTypes["<string>"].Add(new Element(Format.Class, "std::string"));
             Repository.AvailableTypes["\"my_class.h\""].Add(new Element(Format.Class, "my_class"));
             Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library::callback", "my_class", "std::string"));
@@ -49,14 +49,14 @@ namespace CppCodeGeneratorSubsystem.Tests
             // Arrange
             string expected = @"#include<string>
 
-                                namespacemy_library
+                                namespace my_library
                                 {
-                                        tempalate<typenameT1,typenameT2,typenameT3>structstruct1;
-                                        classmy_class;
-                                        usingcallback=my_library::my_class*(*)(std::string);
+                                        clas smy_class;
+                                        using callback=my_library::my_class*(*)(std::string);
+                                        tempalate<typenameT1,typenameT2,typenameT3> structstruct1;
                                 }";
 
-            Repository Repository = Repository.GetRepository();
+            Repository Repository = new Repository();
             Repository.AvailableTypes["<string>"].Add(new Element(Format.Class, "std::string"));
             Repository.AvailableTypes["\"my_class.h\""].Add(new Element(Format.Class, "my_library::my_class"));
             Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library::callback", "my_library::my_class", "std::string"));
@@ -83,37 +83,37 @@ namespace CppCodeGeneratorSubsystem.Tests
             // Arrange
             string expected = @"#include<string>
 
-                                namespacemy_library1
+                                namespace my_library1
                                 {
-                                    usingcallback1=std::string*(*)(std::string);
+                                    using callback1=std::string*(*)(std::string);
                                 }
 
-                                namespacemy_library2
+                                namespace my_library2
                                 {
-                                    usingcallback1=my_library1::callback1*(*)(std::string);
-                                }
-
-                                namespacemy_library1
-                                {
-                                    usingcallback2=my_library2::callback1*(*)(std::string);
-                                }
-
-                                namespacemy_library2
-                                {
-                                    usingcallback2=my_library1::callback2*(*)(std::string);
+                                    using callback1=my_library1::callback1*(*)(std::string);
                                 }
 
                                 namespacemy_library1
                                 {
-                                    usingcallback3=my_library2::callback2*(*)(std::string);
+                                    using callback2=my_library2::callback1*(*)(std::string);
                                 }
 
-                                namespacemy_library2
+                                namespace my_library2
                                 {
-                                    usingcallback3=my_library1::callback3*(*)(std::string);
+                                    using callback2=my_library1::callback2*(*)(std::string);
+                                }
+
+                                namespace my_library1
+                                {
+                                    using callback3=my_library2::callback2*(*)(std::string);
+                                }
+
+                                namespace my_library2
+                                {
+                                    using callback3=my_library1::callback3*(*)(std::string);
                                 }";
 
-            Repository Repository = Repository.GetRepository();
+            Repository Repository = new Repository();
             Repository.AvailableTypes["<string>"].Add(new Element(Format.Class, "std::string"));
             Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library1::callback1", "std::string", "std::string"));
             Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library2::callback1", "my_library1::callback1", "std::string"));
@@ -142,7 +142,7 @@ namespace CppCodeGeneratorSubsystem.Tests
         {
             // Arrange
  
-            Repository Repository = Repository.GetRepository();
+            Repository Repository = new Repository();
             Repository.AvailableTypes["<string>"].Add(new Element(Format.Class, "std::string"));
             Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library1::callback1", "std::string", "std::string"));
             

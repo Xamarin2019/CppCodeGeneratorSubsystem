@@ -44,8 +44,8 @@ namespace CppCodeGeneratorSubsystem
         }
 
         void GetElements(IEnumerable<String> declarations)
-        {
-            foreach (var typeName in declarations)
+        {         
+            foreach (var typeName in declarations.OrderBy(n => n))
             {
 
                 var fileName = Repository.GetFilename(typeName);
@@ -114,8 +114,8 @@ namespace CppCodeGeneratorSubsystem
             foreach (var element in DeclarationsOutput)
             {
                 // Если имеется пространство имен, делаем обертку для него
-                if (currentNmespace != null && currentNmespace != element.Namespace) output += "}" + Environment.NewLine + Environment.NewLine;
-                if (element.Namespace != null)
+                if (!string.IsNullOrEmpty(currentNmespace) && currentNmespace != element.Namespace) output += "}" + Environment.NewLine + Environment.NewLine;
+                if (!string.IsNullOrEmpty(element.Namespace))
                 {
                     if (currentNmespace != element.Namespace) output +=  "namespace " + element.Namespace + Environment.NewLine + "{" + Environment.NewLine;
  
@@ -131,7 +131,7 @@ namespace CppCodeGeneratorSubsystem
                 currentNmespace = element.Namespace;
 
             }
-            if (currentNmespace != null) output += "}" + Environment.NewLine + Environment.NewLine;
+            if (!string.IsNullOrEmpty(currentNmespace)) output += "}" + Environment.NewLine + Environment.NewLine;
 
             return output;
         }
