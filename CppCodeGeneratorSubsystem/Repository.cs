@@ -7,22 +7,24 @@ namespace CppCodeGeneratorSubsystem
 {
     public interface IRepository
     {
+        public string[] IncludeOnlyTypes { get; set; }
         public FilesDictionary AvailableTypes { get; set; }
         public string GetFilename(string declaration);
         public Element GetType(string typeName);
+        public Element GetFilenameType(string fileName, string typeName);
         public void Sort();
     }
 
     public class Repository : IRepository
     {
         // Типы для включения
-        public string[] IncludeOnlyTypes = new string[] { "std::string" };
+        public string[] IncludeOnlyTypes { get; set; } = new string[] { "std::string" };
 
         // Список пространств имен
         public string[] Namespaces = new string[] { "std::string" };
 
         // Словарь доступных для генерации типов упорядоченных по именам файлов являющихся ключами
-        public FilesDictionary AvailableTypes { get; set; } = new FilesDictionary();
+        public virtual FilesDictionary AvailableTypes { get; set; } = new FilesDictionary();
 
         public static Repository GetRepository()
         {
@@ -40,18 +42,24 @@ namespace CppCodeGeneratorSubsystem
 
         public string GetFilename(string typeName)
         {
+            typeName = typeName.Replace(" ", string.Empty);
+            if (string.IsNullOrEmpty(typeName)) throw new FormatException("Parameter'typeName' can't be empty!");
             var fileName = AvailableTypes.Where(d => d.Value.Exists(e => e.QualifiedName == typeName)).FirstOrDefault().Key;
             return fileName;
         }
 
         public Element GetType(string typeName)
         {
+            typeName = typeName.Replace(" ", string.Empty);
+            if (string.IsNullOrEmpty(typeName)) throw new FormatException("Parameter'typeName' can't be empty!");
             Element element = AvailableTypes.SelectMany(d => d.Value).FirstOrDefault(e => e.QualifiedName == typeName);
             return element;
         }
 
         public Element GetFilenameType(string fileName, string typeName)
         {
+            typeName = typeName.Replace(" ", string.Empty);
+            if (string.IsNullOrEmpty(typeName)) throw new FormatException("Parameter'typeName' can't be empty!");
             Element element = AvailableTypes[fileName].FirstOrDefault(e => e.QualifiedName == typeName);
             return element;
         }
@@ -66,7 +74,7 @@ namespace CppCodeGeneratorSubsystem
     // Делаем словарь поудобнее
     public class FilesDictionary : Dictionary<string, List<Element>>
     {
-        public new List<Element> this[string key]
+        virtual public new List<Element> this[string key]
         {
             set { base[key] = value; }
 

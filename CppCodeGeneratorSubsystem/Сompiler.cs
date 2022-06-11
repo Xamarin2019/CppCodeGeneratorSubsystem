@@ -7,7 +7,7 @@ namespace CppCodeGeneratorSubsystem
 {
     public class Сompiler
     {
-        public Repository Repository { get; set; }
+        public IRepository Repository { get; set; }
         //includes input
         public List<string> Includes { get; set; } = new List<string>();
 
@@ -18,7 +18,7 @@ namespace CppCodeGeneratorSubsystem
 
         List<Element> DeclarationsOutput { get; set; } = new List<Element>();
 
-        public Сompiler(Repository repository)
+        public Сompiler(IRepository repository)
         {
             Repository = repository;
         }
@@ -101,11 +101,10 @@ namespace CppCodeGeneratorSubsystem
 
             // Получаем списки включений и предварительных объявлений
             Compile();
-            
-            // Сортируем и удаляем дубликаты из списка включений
+
+            // Генерируем список включений
             foreach (var item in IncludesOutput)
             {
-                // и добавляем в выходной текст
                 output += $"#include {item}" + Environment.NewLine;
             }
 

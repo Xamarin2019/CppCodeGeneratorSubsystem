@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Xunit;
+using Moq;
 
 namespace CppCodeGeneratorSubsystem.Tests
 {
@@ -73,7 +74,7 @@ namespace CppCodeGeneratorSubsystem.Tests
             Assert.True(elements[1] == null);
             Assert.Equal(elements[2], new Class("std::string"));
             Assert.Equal(elements[3], new Struct("my_library::struct1<T1,T2,T3>"));
-            //Assert.Throws<FormatException>(() => new Alias(inputNames[1], inputNames[0], " "));
+            Assert.Throws<FormatException>(() => Repository.GetType(" "));
         }
 
         [Fact]
@@ -90,7 +91,6 @@ namespace CppCodeGeneratorSubsystem.Tests
             Repository.AvailableTypes["\"my_library.h\""].Add(new Struct("my_library::struct1<T1,T2,T3>"));
 
             // Act
-            //var element = Repository.GetType("std::string");
             fileNames = fileNames.Zip(inputNames, (_, inputName) => Repository.GetFilename(inputName)).ToArray();
 
 
@@ -99,7 +99,44 @@ namespace CppCodeGeneratorSubsystem.Tests
             Assert.True(fileNames[1] == null);
             Assert.Equal("<string>", fileNames[2]);
             Assert.Equal("\"my_library.h\"", fileNames[3]);
-            //Assert.Throws<FormatException>(() => new Alias(inputNames[1], inputNames[0], " "));
+            Assert.Throws<FormatException>(() =>  Repository.GetFilename(" "));
+        }
+
+        [Fact]
+        public void Test_Repo_Indexer()
+        {
+            // Arrange
+            string[] inputNames = { "ClassName", "my_library::callback1", "std::string", "my_library::struct1<T1,T2,T3>" };
+            var fileNames = new string[inputNames.Length];
+            var elements = new Element[inputNames.Length];
+            int filesDictionaryIndexCounter = 0;
+            int availableTypesCounter = 0;
+
+            var FilesDictionaryFake = new Mock<FilesDictionary>() { CallBase = true };
+            FilesDictionaryFake.Setup(r => r[It.IsAny<string>()]).Callback(() => filesDictionaryIndexCounter++);
+
+            var RepositoryFake = new Mock<Repository>() { CallBase = true };
+            RepositoryFake.SetupGet(r => r.AvailableTypes).Returns(FilesDictionaryFake.Object).Callback(() => availableTypesCounter++);
+
+            Repository Repository = RepositoryFake.Object;
+            Repository.AvailableTypes["<string>"].Add(new Class("std::string"));
+            Repository.AvailableTypes["\"my_class.h\""].Add(new Class("my_library::my_class"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library::callback", "my_library::my_class", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Struct("my_library::struct1<T1,T2,T3>"));
+
+            // Act
+            fileNames = fileNames.Zip(inputNames, (_, inputName) => Repository.GetFilename(inputName)).ToArray();
+            elements = elements.Zip(inputNames, (_, inputName) => Repository.GetType(inputName)).ToArray();
+
+            // Assert
+            Assert.True(fileNames[0] == null);
+            Assert.True(fileNames[1] == null);
+            Assert.Equal("<string>", fileNames[2]);
+            Assert.Equal("\"my_library.h\"", fileNames[3]);
+            Assert.Throws<FormatException>(() => Repository.GetFilename(" "));
+            Assert.True(filesDictionaryIndexCounter == inputNames.Length);
+            Assert.True(availableTypesCounter == inputNames.Length * 3);
+
         }
     }
 }
