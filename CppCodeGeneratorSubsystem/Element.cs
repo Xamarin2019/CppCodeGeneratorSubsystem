@@ -8,7 +8,7 @@ namespace CppCodeGeneratorSubsystem
     {
         public string Namespace { get; set; } = "";
         public string Name { get; set; }
-        public string QualifiedName => string.IsNullOrEmpty(Namespace) ? Name + template:  Namespace + "::" + Name + template;
+        public string QualifiedName => string.IsNullOrEmpty(Namespace) ? Name + template : Namespace + "::" + Name + template;
         string template = "";
         public string Template
         {
@@ -28,14 +28,15 @@ namespace CppCodeGeneratorSubsystem
         {
             // Удалим лишние пробелы, на всякий случай
             name = name.Replace(" ", string.Empty);
+            if (string.IsNullOrEmpty(name)) throw new FormatException("Parameter'name' can't be empty!");
 
             // Если есть простарнство имен, сохраняем его отдельно
-            var firstType = name.Split("::", 2);
-            if (firstType.Length > 1)
+            var findNamespace = name.Split("::", 2);
+            if (findNamespace.Length > 1)
             {
-                Namespace = firstType[0];
+                Namespace = findNamespace[0];
                 // Имя типа без пространства имен
-                Name = firstType[1];
+                Name = findNamespace[1];
             }
             else
             {
@@ -43,11 +44,11 @@ namespace CppCodeGeneratorSubsystem
             }
 
             // Если есть шаблон, сохраняем его отдельно
-            var findeTemlate = Name.IndexOf("<");
-            if (findeTemlate > 0)
+            var findTemlate = Name.IndexOf("<");
+            if (findTemlate > 0)
             {
-                Template = Name.Substring(findeTemlate);
-                Name = Name.Remove(findeTemlate); 
+                Template = Name.Substring(findTemlate);
+                Name = Name.Remove(findTemlate);
             }
 
             foreach (var nestedName in nestedNames)
@@ -72,7 +73,7 @@ namespace CppCodeGeneratorSubsystem
             if (NestedTypes.Count == item.NestedTypes.Count)
             {
                 for (int i = 0; i < NestedTypes.Count; i++) if (NestedTypes[i] != item.NestedTypes[i]) result = false;
-             }
+            }
             else
             {
                 result = false;
@@ -115,7 +116,18 @@ namespace CppCodeGeneratorSubsystem
 
     public class Alias : Element
     {
-        public Alias(string name, params string[] nestedNames) : base(name, nestedNames)
+        /// <summary>
+        /// This type forms an alias of the pointer to the function, which returns the returnType and takes the rameterType
+        /// </summary>
+        /// <param name="name">Alias name</param>
+        /// <param name="returnType">function returns type</param>
+        /// <param name="parameterType">function parameter</param>
+        /// <example>
+        /// <code>
+        /// using callback = my_class* (*)(std::string);
+        /// </code>
+        /// </example>
+        public Alias(string name, string returnType, string parameterType) : base(name, returnType, parameterType)
         {
 
         }
