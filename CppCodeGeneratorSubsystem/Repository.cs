@@ -5,13 +5,21 @@ using System.Text;
 
 namespace CppCodeGeneratorSubsystem
 {
-    public class Repository
+    public interface IRepository
+    {
+        public FilesDictionary AvailableTypes { get; set; }
+        public string GetFilename(string declaration);
+        public Element GetType(string typeName);
+        public void Sort();
+    }
+
+    public class Repository : IRepository
     {
         // Типы для включения
         public string[] IncludeOnlyTypes = new string[] { "std::string" };
 
         // Словарь доступных для генерации типов упорядоченных по именам файлов являющихся ключами
-        public FilesDictionary AvailableTypes = new FilesDictionary();
+        public FilesDictionary AvailableTypes { get; set; } = new FilesDictionary();
 
         public static Repository GetRepository()
         {
@@ -25,6 +33,25 @@ namespace CppCodeGeneratorSubsystem
             Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library2::callback3", "my_library1::callback3", "std::string"));
 
             return Repository;
+        }
+
+        public string GetFilename(string typeName)
+        {
+            var fileName = AvailableTypes.Where(d => d.Value.Exists(e => e.QualifiedName == typeName)).FirstOrDefault().Key;
+            return fileName;
+        }
+
+        public Element GetType(string typeName)
+        {
+            Element element = AvailableTypes.Select(d => d.Value)
+                                                          .Where(l => l.Exists(e => e.QualifiedName == typeName))
+                                                          .FirstOrDefault()?.FirstOrDefault(e => e.QualifiedName == typeName);
+            return element;
+        }
+
+        public void Sort()
+        {
+
         }
 
     }

@@ -27,23 +27,28 @@ namespace CppCodeGeneratorSubsystem
         public void Compile()
         {
             // Здесь добавляю заголовки для включения
-            foreach (var item in Includes)
-            {
-                var fileName = Repository.AvailableTypes.Where(d => d.Value.Exists(e => e.QualifiedName == item)).FirstOrDefault().Key;
-                IncludesOutput.Add(fileName);
-            }
+            GetFilenamess(Includes);
 
-            // Здесь добавляю элементы предварительные объявления с группированные по постранствам имен
+            // Здесь добавляю типы для объявления
             GetElements(Declarations);
         }
 
-        
-        void GetElements(IEnumerable<String> Declarations)
+        void GetFilenamess(IEnumerable<String> includes)
         {
-            foreach (var item in Declarations)
+            foreach (var typeName in includes)
+            {
+                var fileName = Repository.GetFilename(typeName);
+                IncludesOutput.Add(fileName);
+                IncludesOutput = IncludesOutput.Distinct().OrderBy(k => k).ToList();
+            }
+        }
+
+        void GetElements(IEnumerable<String> declarations)
+        {
+            foreach (var typeName in declarations)
             {
 
-                var fileName = Repository.AvailableTypes.Where(d => d.Value.Exists(e => e.QualifiedName == item)).FirstOrDefault().Key;
+                var fileName = Repository.GetFilename(typeName);
 
                 // Если уже есть включение, пропускаем
                 if (IncludesOutput.Contains(fileName))
@@ -52,16 +57,14 @@ namespace CppCodeGeneratorSubsystem
                 }
 
                 // Если содержится в списке для обязательного включения, делаем включение и переходим на следующую итерацию
-                if (Repository.IncludeOnlyTypes.Contains(item))
+                if (Repository.IncludeOnlyTypes.Contains(typeName))
                 {
                     IncludesOutput.Add(fileName);
                     continue;
                 }
 
                 // Получаем элемент для указанного типа
-                var element = Repository.AvailableTypes.Select(d => d.Value)
-                                                       .Where(l => l.Exists(e => e.QualifiedName == item))
-                                                       .FirstOrDefault()?.FirstOrDefault(e => e.QualifiedName == item);
+                var element = Repository.GetType(typeName);
 
                 // Если типа нет в репозитории, выбрасывам исключение
                 if (element == null) throw new NullReferenceException("Typewas not found in the repository!");
@@ -84,6 +87,8 @@ namespace CppCodeGeneratorSubsystem
                 }
 
             }
+
+            IncludesOutput = IncludesOutput.Distinct().OrderBy(k => k).ToList();
         }
 
         
@@ -96,7 +101,7 @@ namespace CppCodeGeneratorSubsystem
             Compile();
             
             // Сортируем и удаляем дубликаты из списка включений
-            foreach (var item in IncludesOutput.Distinct().OrderBy(k => k))
+            foreach (var item in IncludesOutput)
             {
                 // и добавляем в выходной текст
                 output += $"#include {item}" + Environment.NewLine;
@@ -124,8 +129,6 @@ namespace CppCodeGeneratorSubsystem
                 }
                 
                 currentNmespace = element.Namespace;
-
-               
 
             }
             if (currentNmespace != null) output += "}" + Environment.NewLine + Environment.NewLine;
