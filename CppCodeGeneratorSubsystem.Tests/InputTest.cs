@@ -49,5 +49,31 @@ namespace CppCodeGeneratorSubsystem.Tests
             Assert.Equal(result.NestedTypes[1].Namespace, inputType.Namespace);
             Assert.Throws<FormatException>(() => new Alias(inputNames[1], inputNames[0], " "));
         }
+
+        [Fact]
+        public void Test_Repo()
+        {
+            // Arrange
+            string[] inputNames = { "ClassName", "my_library::callback1", "std::string", "my_library::struct1<T1,T2,T3>" };
+            var elements = new Element[inputNames.Length];
+
+            Repository Repository = new Repository();
+            Repository.AvailableTypes["<string>"].Add(new Class("std::string"));
+            Repository.AvailableTypes["\"my_class.h\""].Add(new Class("my_library::my_class"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library::callback", "my_library::my_class", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Struct("my_library::struct1<T1,T2,T3>"));
+
+            // Act
+            //var element = Repository.GetType("std::string");
+            elements = elements.Zip(inputNames, (element, inputName) => Repository.GetType(inputName)).ToArray();
+            
+
+            // Assert
+            //Assert.Equal(result.QualifiedName, inputNames[1]);
+            //Assert.Equal(result.NestedTypes[0].QualifiedName, outputType.QualifiedName);
+            //Assert.Equal(result.NestedTypes[1].QualifiedName, inputType.QualifiedName);
+            //Assert.Equal(result.NestedTypes[1].Namespace, inputType.Namespace);
+            //Assert.Throws<FormatException>(() => new Alias(inputNames[1], inputNames[0], " "));
+        }
     }
 }

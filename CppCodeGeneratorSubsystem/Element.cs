@@ -16,7 +16,7 @@ namespace CppCodeGeneratorSubsystem
             {
                 // Если есть шаблон, формируем
                 if (!string.IsNullOrEmpty(template))
-                    template = "tempalate <" + string.Join(", ", template.Trim('<', '>').Split(",").Select(t => "typename " + t).ToArray()) + "> ";
+                    return "tempalate <" + string.Join(", ", template.Trim('<', '>').Split(",").Select(t => "typename " + t).ToArray()) + "> ";
                 return template;
             }
 

@@ -18,6 +18,9 @@ namespace CppCodeGeneratorSubsystem
         // Типы для включения
         public string[] IncludeOnlyTypes = new string[] { "std::string" };
 
+        // Список пространств имен
+        public string[] Namespaces = new string[] { "std::string" };
+
         // Словарь доступных для генерации типов упорядоченных по именам файлов являющихся ключами
         public FilesDictionary AvailableTypes { get; set; } = new FilesDictionary();
 
@@ -47,6 +50,12 @@ namespace CppCodeGeneratorSubsystem
                                                           .Where(l => l.Exists(e => e.QualifiedName == typeName))
                                                           .FirstOrDefault()?.FirstOrDefault(e => e.QualifiedName == typeName);
             return element;
+        }
+
+        public Element GetType(string fileName, string typeName)
+        {
+ 
+            return null;
         }
 
         public void Sort()
