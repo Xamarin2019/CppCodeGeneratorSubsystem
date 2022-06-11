@@ -46,16 +46,14 @@ namespace CppCodeGeneratorSubsystem
 
         public Element GetType(string typeName)
         {
-            Element element = AvailableTypes.Select(d => d.Value)
-                                                          .Where(l => l.Exists(e => e.QualifiedName == typeName))
-                                                          .FirstOrDefault()?.FirstOrDefault(e => e.QualifiedName == typeName);
+            Element element = AvailableTypes.SelectMany(d => d.Value).FirstOrDefault(e => e.QualifiedName == typeName);
             return element;
         }
 
-        public Element GetType(string fileName, string typeName)
+        public Element GetFilenameType(string fileName, string typeName)
         {
- 
-            return null;
+            Element element = AvailableTypes[fileName].FirstOrDefault(e => e.QualifiedName == typeName);
+            return element;
         }
 
         public void Sort()

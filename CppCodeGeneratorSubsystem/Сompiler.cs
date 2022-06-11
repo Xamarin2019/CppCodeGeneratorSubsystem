@@ -65,7 +65,8 @@ namespace CppCodeGeneratorSubsystem
                 }
 
                 // Получаем элемент для указанного типа
-                var element = Repository.GetType(typeName);
+                //var element = Repository.GetType(typeName);
+                var element = Repository.GetFilenameType(fileName, typeName);
 
                 // Если типа нет в репозитории, выбрасывам исключение
                 if (element == null) throw new NullReferenceException("Type was not found in the repository!");
