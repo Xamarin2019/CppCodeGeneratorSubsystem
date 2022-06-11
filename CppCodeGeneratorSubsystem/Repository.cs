@@ -24,13 +24,13 @@ namespace CppCodeGeneratorSubsystem
         public static Repository GetRepository()
         {
             Repository Repository = new Repository();
-            Repository.AvailableTypes["<string>"].Add(new Element(Format.Class, "std::string"));
-            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library1::callback1", "std::string", "std::string"));
-            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library2::callback1", "my_library1::callback1", "std::string"));
-            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library1::callback2", "my_library2::callback1", "std::string"));
-            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library2::callback2", "my_library1::callback2", "std::string"));
-            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library1::callback3", "my_library2::callback2", "std::string"));
-            Repository.AvailableTypes["\"my_library.h\""].Add(new Element(Format.Alias, "my_library2::callback3", "my_library1::callback3", "std::string"));
+            Repository.AvailableTypes["<string>"].Add(new Class("std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library1::callback1", "std::string", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library2::callback1", "my_library1::callback1", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library1::callback2", "my_library2::callback1", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library2::callback2", "my_library1::callback2", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library1::callback3", "my_library2::callback2", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library2::callback3", "my_library1::callback3", "std::string"));
 
             return Repository;
         }
@@ -59,11 +59,9 @@ namespace CppCodeGeneratorSubsystem
     // Делаем словарь поудобнее
     public class FilesDictionary : Dictionary<string, List<Element>>
     {
-        public List<Element> Value { set; get; } = new List<Element>();
-
         public new List<Element> this[string key]
         {
-            set { base[key] = Value; }
+            set { base[key] = value; }
 
             get
             {

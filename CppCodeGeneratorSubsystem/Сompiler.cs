@@ -49,6 +49,7 @@ namespace CppCodeGeneratorSubsystem
             {
 
                 var fileName = Repository.GetFilename(typeName);
+                if (fileName == null) throw new NullReferenceException("Type was not found in the repository!");
 
                 // Если уже есть включение, пропускаем
                 if (IncludesOutput.Contains(fileName))
@@ -67,13 +68,13 @@ namespace CppCodeGeneratorSubsystem
                 var element = Repository.GetType(typeName);
 
                 // Если типа нет в репозитории, выбрасывам исключение
-                if (element == null) throw new NullReferenceException("Typewas not found in the repository!");
+                if (element == null) throw new NullReferenceException("Type was not found in the repository!");
 
                 // Если тип уже попадался, пропускаем
                 if (DeclarationsOutput.Contains(element)) continue;
 
                 // Пробежимся по вложенным типам
-                GetElements(element.Types.Skip(1));
+                GetElements(element.NestedTypes.Select(t => t.QualifiedName));
 
                 // И добавляем к ним зависимый тип
                 if (element.Namespace == null)

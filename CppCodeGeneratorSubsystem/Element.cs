@@ -1,70 +1,77 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CppCodeGeneratorSubsystem
 {
-    public class Element
+    public abstract class Element
     {
         public string Namespace { get; set; } = "";
-        public string[] Types { get; set; }
-        public string Format { get; set; }
         public string Name { get; set; }
-        public string Template { get; set; } = "";
-        public string QualifiedName => string.IsNullOrEmpty(Namespace) ? Name :  Namespace + "::" + Name;
-
-        public Element(string Format, params string[] Types)
+        public string QualifiedName => string.IsNullOrEmpty(Namespace) ? Name + template:  Namespace + "::" + Name + template;
+        string template = "";
+        public string Template
         {
+            get
+            {
+                // Если есть шаблон, формируем
+                if (!string.IsNullOrEmpty(template))
+                    template = "tempalate <" + string.Join(", ", template.Trim('<', '>').Split(",").Select(t => "typename " + t).ToArray()) + "> ";
+                return template;
+            }
+
+            set { template = value; }
+        }
+        public List<Element> NestedTypes { get; set; } = new List<Element>();
+
+        public Element(string name, params string[] nestedNames)
+        {
+            // Удалим лишние пробелы, на всякий случай
+            name = name.Replace(" ", string.Empty);
+
             // Если есть простарнство имен, сохраняем его отдельно
-            var firstType = Types[0].Split("::", 2);
+            var firstType = name.Split("::", 2);
             if (firstType.Length > 1)
             {
                 Namespace = firstType[0];
-                Types[0] = firstType[1];
+                // Имя типа без пространства имен
+                Name = firstType[1];
             }
-
-            // Имя типа без пространства имен
-            Name = Types[0];
+            else
+            {
+                Name = name;
+            }
 
             // Если есть шаблон, сохраняем его отдельно
-            if (Types[0].Contains("<"))
+            var findeTemlate = Name.IndexOf("<");
+            if (findeTemlate > 0)
             {
-                Types[0] = Types[0].Split("<", 2)[0];
-                Template = Name.Substring(Types[0].Length);
+                Template = Name.Substring(findeTemlate);
+                Name = Name.Remove(findeTemlate); 
             }
 
-            this.Types = Types;
-            this.Format = Format;
-        }
-
-        public override string ToString()
-        { 
-            string template = "";
-
-            // Если есть шаблон, формируем
-            if (!string.IsNullOrEmpty(Template))
-            template = "tempalate <" + string.Join(", ", Template.Trim('<', '>').Split(",").Select(t => "typename " + t).ToArray()) + "> ";
-            // лепим его спереди
-            return template + String.Format(Format, Types);
+            foreach (var nestedName in nestedNames)
+            {
+                NestedTypes.Add(new Class(nestedName));
+            }
         }
 
         public override bool Equals(object obj)
         {
-            var item = obj as Element;
-
-            if (item == null)
+            if ((obj == null) || !this.GetType().Equals(obj.GetType()))
             {
                 return false;
             }
+            var item = obj as Element;
 
             bool result = Namespace.Equals(item.Namespace)
-                       && Format.Equals(item.Format)
                        && Name.Equals(item.Name)
                        && Template.Equals(item.Template)
                        && QualifiedName.Equals(item.QualifiedName);
 
-            if (Types.Length == item.Types.Length)
+            if (NestedTypes.Count == item.NestedTypes.Count)
             {
-                for (int i = 0; i < Types.Length; i++) if (Types[i] != item.Types[i]) result = false;
+                for (int i = 0; i < NestedTypes.Count; i++) if (NestedTypes[i] != item.NestedTypes[i]) result = false;
              }
             else
             {
@@ -76,16 +83,46 @@ namespace CppCodeGeneratorSubsystem
 
         public override int GetHashCode()
         {
-            return (Format + string.Join(",",Types)).GetHashCode();
+            return (QualifiedName + string.Join(",", NestedTypes)).GetHashCode();
         }
     }
 
-    // Формирование сигнатур типов
-    public class Format
+    public class Class : Element
     {
-        public static string Class = "class {0};";
-        public static string Alias = "using {0} = {1}* (*)({2});";
-        public static string Struct = "struct {0};";
+        public Class(string name) : base(name)
+        {
+
+        }
+
+        public override string ToString()
+        {
+            return $"{Template}class {Name};";
+        }
     }
 
+    public class Struct : Element
+    {
+        public Struct(string name) : base(name)
+        {
+
+        }
+        public override string ToString()
+        {
+            return $"{Template}struct {Name};";
+        }
+
+    }
+
+    public class Alias : Element
+    {
+        public Alias(string name, params string[] nestedNames) : base(name, nestedNames)
+        {
+
+        }
+
+        public override string ToString()
+        {
+            return $"using {Name} = {NestedTypes[0].QualifiedName ?? "No data"}* (*)({NestedTypes[1].QualifiedName ?? "No data"});";
+        }
+    }
 }
