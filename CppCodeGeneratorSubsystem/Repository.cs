@@ -58,8 +58,10 @@ namespace CppCodeGeneratorSubsystem
 
         public Element GetFilenameType(string fileName, string typeName)
         {
-            typeName = typeName.Replace(" ", string.Empty);
+            fileName = fileName.Replace(" ", string.Empty); typeName = typeName.Replace(" ", string.Empty);
+            if (string.IsNullOrEmpty(fileName)) throw new FormatException("Parameter'fileName' can't be empty!");
             if (string.IsNullOrEmpty(typeName)) throw new FormatException("Parameter'typeName' can't be empty!");
+            if (!AvailableTypes.ContainsKey(fileName)) throw new NullReferenceException($"'{fileName}' not found in AvailableTypes!");
             Element element = AvailableTypes[fileName].FirstOrDefault(e => e.QualifiedName == typeName);
             return element;
         }

@@ -34,8 +34,8 @@ namespace CppCodeGeneratorSubsystem.Tests
         {
             // Arrange
             string[] inputNames = { "ClassName", "my_library::callback1", "std::string", "my_library::struct1<T1,T2,T3>" };
-            string[] namespaces = { "", "my_library", "std", "my_library" };
-            string[] names = { "ClassName", "callback1", "string", "struct1" };
+            string[] namespaces = { "",          "my_library",            "std",         "my_library" };
+            string[] names =      { "ClassName", "callback1",             "string",      "struct1" };
             var elements = new Element[inputNames.Length];
 
             // Act
@@ -100,6 +100,28 @@ namespace CppCodeGeneratorSubsystem.Tests
             Assert.Equal("<string>", fileNames[2]);
             Assert.Equal("\"my_library.h\"", fileNames[3]);
             Assert.Throws<FormatException>(() =>  Repository.GetFilename(" "));
+        }
+
+        [Fact]
+        public void Test_Repo_GetFilenameType()
+        {
+            // Arrange
+            string[] inputNames = { "ClassName", "my_library::callback1", "std::string", "my_library::struct1<T1,T2,T3>" };
+ 
+            Repository Repository = new Repository();
+            Repository.AvailableTypes["<string>"].Add(new Class("std::string"));
+            Repository.AvailableTypes["\"my_class.h\""].Add(new Class("my_library::my_class"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library::callback", "my_library::my_class", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Struct("my_library::struct1<T1,T2,T3>"));
+
+            // Act
+            Element element1 = Repository.GetFilenameType("<string>", "std::string");
+            Element element2 = Repository.GetFilenameType("<string>", "std::string1");
+
+            // Assert
+            Assert.Equal("std::string", element1.QualifiedName);
+            Assert.Null(element2);
+            Assert.Throws<NullReferenceException>(() => Repository.GetFilenameType("<string>1", "std::string"));
         }
 
         [Fact]
