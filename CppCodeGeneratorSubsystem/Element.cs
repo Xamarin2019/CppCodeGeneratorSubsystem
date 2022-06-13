@@ -6,9 +6,81 @@ namespace CppCodeGeneratorSubsystem
 {
     public abstract class Element
     {
-        public string Namespace { get; set; } = "";
         public string Name { get; set; }
-        public string QualifiedName => string.IsNullOrEmpty(Namespace) ? Name + template : Namespace + "::" + Name + template;
+        public string QualifiedName => Parent == null ? Name : Parent.Name + "::" + Name;
+        public Element Parent { get; set; }
+        public List<Element> Nested { get; set; } = new List<Element>();
+
+        public Element(string name, params Element[] nested)
+        {
+            // Удалим лишние пробелы, на всякий случай
+            name = name.Replace(" ", string.Empty);
+            if (string.IsNullOrEmpty(name)) throw new FormatException("Parameter'name' can't be empty!");
+            Name = name;
+
+            foreach (var element in nested)
+            {
+                element.Parent = this;
+
+                Nested.Add(element);
+            }
+        }
+
+        public override bool Equals(object obj)
+        {
+            if ((obj == null) || !this.GetType().Equals(obj.GetType()))
+            {
+                return false;
+            }
+            var item = obj as Element;
+
+            bool result = Name.Equals(item.Name)
+                          && QualifiedName.Equals(item.QualifiedName);
+            if (result == false) return result;
+
+            if (Parent != null) result = Parent.Equals(item.Parent);
+            if (result == false) return result;
+
+            if (Parent == null) result = item.Parent == null;
+            if (result == false) return result;
+
+            if (Nested.Count == item.Nested.Count)
+            {
+                for (int i = 0; i < Nested.Count; i++) if (!Nested[i].Equals(item.Nested[i])) return false;
+            }
+
+            return result;
+        }
+
+        public override int GetHashCode()
+        {
+            return (QualifiedName + string.Join(",", Nested.Select(n => n.Name))).GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            string nestedTostring = Nested.Count != 0 ? Environment.NewLine + "    " + string.Join("    ", Nested.Select(n => n.ToString())) + Environment.NewLine : "...";
+            return $"{{{nestedTostring}}}" + Environment.NewLine;
+        }
+
+        public static Element operator +(Element a, Element b) { a.Nested.AddRange(b.Nested); return a; }
+    }
+
+    public class Namespace : Element
+    {
+        public Namespace(string name, params Element[] nested) : base(name, nested)
+        {
+            
+        }
+        public override string ToString()
+        {
+            return $"namespace {Name}" + base.ToString();
+        }
+    }
+
+    public class Class : Element
+    {
+        public new string QualifiedName => base.QualifiedName + template;
         string template = "";
         public string Template
         {
@@ -22,27 +94,9 @@ namespace CppCodeGeneratorSubsystem
 
             set { template = value; }
         }
-        public List<Element> NestedTypes { get; set; } = new List<Element>();
 
-        public Element(string name, params string[] nestedNames)
+        public Class(string name, params Element[] nested) : base(name, nested)
         {
-            // Удалим лишние пробелы, на всякий случай
-            name = name.Replace(" ", string.Empty);
-            if (string.IsNullOrEmpty(name)) throw new FormatException("Parameter'name' can't be empty!");
-
-            // Если есть простарнство имен, сохраняем его отдельно
-            var findNamespace = name.Split("::", 2);
-            if (findNamespace.Length > 1)
-            {
-                Namespace = findNamespace[0];
-                // Имя типа без пространства имен
-                Name = findNamespace[1];
-            }
-            else
-            {
-                Name = name;
-            }
-
             // Если есть шаблон, сохраняем его отдельно
             var findTemlate = Name.IndexOf("<");
             if (findTemlate > 0)
@@ -50,58 +104,15 @@ namespace CppCodeGeneratorSubsystem
                 Template = Name.Substring(findTemlate);
                 Name = Name.Remove(findTemlate);
             }
-
-            foreach (var nestedName in nestedNames)
-            {
-                NestedTypes.Add(new Class(nestedName));
-            }
-        }
-
-        public override bool Equals(object obj)
-        {
-            if ((obj == null) || !this.GetType().Equals(obj.GetType()))
-            {
-                return false;
-            }
-            var item = obj as Element;
-
-            bool result = Namespace.Equals(item.Namespace)
-                       && Name.Equals(item.Name)
-                       && Template.Equals(item.Template)
-                       && QualifiedName.Equals(item.QualifiedName);
-
-            if (NestedTypes.Count == item.NestedTypes.Count)
-            {
-                for (int i = 0; i < NestedTypes.Count; i++) if (NestedTypes[i] != item.NestedTypes[i]) result = false;
-            }
-            else
-            {
-                result = false;
-            }
-
-            return result;
-        }
-
-        public override int GetHashCode()
-        {
-            return (QualifiedName + string.Join(",", NestedTypes)).GetHashCode();
-        }
-    }
-
-    public class Class : Element
-    {
-        public Class(string name) : base(name)
-        {
-
         }
 
         public override string ToString()
         {
-            return $"{Template}class {Name};";
+            return $"{Template}class {Name}{base.ToString()};";
         }
     }
 
-    public class Struct : Element
+    public class Struct : Class
     {
         public Struct(string name) : base(name)
         {
@@ -127,14 +138,15 @@ namespace CppCodeGeneratorSubsystem
         /// using callback = my_class* (*)(std::string);
         /// </code>
         /// </example>
-        public Alias(string name, string returnType, string parameterType) : base(name, returnType, parameterType)
+        public Alias(string name, Element returnType, Element parameterType) : base(name)
         {
-
+            Nested.Add(returnType);
+            Nested.Add(parameterType);
         }
 
         public override string ToString()
         {
-            return $"using {Name} = {NestedTypes[0].QualifiedName ?? "No data"}* (*)({NestedTypes[1].QualifiedName ?? "No data"});";
+            return $"using {Name} = {Nested[0]?.QualifiedName ?? "No data"}* (*)({Nested[1]?.QualifiedName ?? "No data"});";
         }
     }
 }

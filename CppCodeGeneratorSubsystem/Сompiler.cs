@@ -16,11 +16,12 @@ namespace CppCodeGeneratorSubsystem
 
         List<string> IncludesOutput { get; set; } = new List<string>();
 
-        List<Element> DeclarationsOutput { get; set; } = new List<Element>();
+        ElementList DeclarationsOutput { get; set; }
 
         public Сompiler(IRepository repository)
         {
             Repository = repository;
+            DeclarationsOutput = new ElementList(Repository.AvailableTypes);
         }
 
 
@@ -66,7 +67,7 @@ namespace CppCodeGeneratorSubsystem
 
                 // Получаем элемент для указанного типа
                 //var element = Repository.GetType(typeName);
-                var element = Repository.GetFilenameType(fileName, typeName);
+                var element = Repository.GetFilenameElement(fileName, typeName);
 
                 // Если типа нет в репозитории, выбрасывам исключение
                 if (element == null) throw new NullReferenceException("Type was not found in the repository!");
@@ -75,18 +76,13 @@ namespace CppCodeGeneratorSubsystem
                 if (DeclarationsOutput.Contains(element)) continue;
 
                 // Пробежимся по вложенным типам
-                GetElements(element.NestedTypes.Select(t => t.QualifiedName));
+                //GetElements(element.Nested.Select(t => t.QualifiedName));
 
                 // И добавляем к ним зависимый тип
-                if (element.Namespace == null)
-                {
-                    // Лучше переместить в формирование строки
-                    DeclarationsOutput = new Element[]{ element }.Concat(DeclarationsOutput).ToList();
-                }
-                else
-                {
-                    DeclarationsOutput.Add(element);
-                }
+                DeclarationsOutput.Add(element);
+ 
+                    //DeclarationsOutput = new Element[] { element }.Concat(DeclarationsOutput);
+  
 
             }
 
@@ -111,28 +107,11 @@ namespace CppCodeGeneratorSubsystem
             output += Environment.NewLine;
 
             // Генерируем предварительные объявления 
-            string currentNmespace = null;
             foreach (var element in DeclarationsOutput)
             {
-                // Если имеется пространство имен, делаем обертку для него
-                if (!string.IsNullOrEmpty(currentNmespace) && currentNmespace != element.Namespace) output += "}" + Environment.NewLine + Environment.NewLine;
-                if (!string.IsNullOrEmpty(element.Namespace))
-                {
-                    if (currentNmespace != element.Namespace) output +=  "namespace " + element.Namespace + Environment.NewLine + "{" + Environment.NewLine;
- 
-                    output += $"    {element}" + Environment.NewLine;
-                }
-                else
-                {
-                   output += $"{element}" + Environment.NewLine;
- 
-                   output += Environment.NewLine;
-                }
-                
-                currentNmespace = element.Namespace;
-
+                output += element;
             }
-            if (!string.IsNullOrEmpty(currentNmespace)) output += "}" + Environment.NewLine + Environment.NewLine;
+ 
 
             return output;
         }

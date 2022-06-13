@@ -45,9 +45,9 @@ namespace CppCodeGeneratorSubsystem.Tests
 
             // Assert
             Assert.Equal(result.QualifiedName, inputNames[1]);
-            Assert.Equal(result.NestedTypes[0].QualifiedName, outputType.QualifiedName);
-            Assert.Equal(result.NestedTypes[1].QualifiedName, inputType.QualifiedName);
-            Assert.Equal(result.NestedTypes[1].Namespace, inputType.Namespace);
+            Assert.Equal(result.Nested[0].QualifiedName, outputType.QualifiedName);
+            Assert.Equal(result.Nested[1].QualifiedName, inputType.QualifiedName);
+            Assert.Equal(result.Nested[1].Namespace, inputType.Namespace);
             Assert.Throws<FormatException>(() => new Alias(inputNames[1], inputNames[0], " "));
         }
 
@@ -66,7 +66,7 @@ namespace CppCodeGeneratorSubsystem.Tests
 
             // Act
             //var element = Repository.GetType("std::string");
-            elements = elements.Zip(inputNames, (element, inputName) => Repository.GetType(inputName)).ToArray();
+            elements = elements.Zip(inputNames, (element, inputName) => Repository.GetElement(inputName)).ToArray();
             
 
             // Assert
@@ -74,7 +74,7 @@ namespace CppCodeGeneratorSubsystem.Tests
             Assert.True(elements[1] == null);
             Assert.Equal(elements[2], new Class("std::string"));
             Assert.Equal(elements[3], new Struct("my_library::struct1<T1,T2,T3>"));
-            Assert.Throws<FormatException>(() => Repository.GetType(" "));
+            Assert.Throws<FormatException>(() => Repository.GetElement(" "));
         }
 
         [Fact]
@@ -115,13 +115,13 @@ namespace CppCodeGeneratorSubsystem.Tests
             Repository.AvailableTypes["\"my_library.h\""].Add(new Struct("my_library::struct1<T1,T2,T3>"));
 
             // Act
-            Element element1 = Repository.GetFilenameType("<string>", "std::string");
-            Element element2 = Repository.GetFilenameType("<string>", "std::string1");
+            Element element1 = Repository.GetFilenameElement("<string>", "std::string");
+            Element element2 = Repository.GetFilenameElement("<string>", "std::string1");
 
             // Assert
             Assert.Equal("std::string", element1.QualifiedName);
             Assert.Null(element2);
-            Assert.Throws<NullReferenceException>(() => Repository.GetFilenameType("<string>1", "std::string"));
+            Assert.Throws<NullReferenceException>(() => Repository.GetFilenameElement("<string>1", "std::string"));
         }
 
         [Fact]
@@ -148,7 +148,7 @@ namespace CppCodeGeneratorSubsystem.Tests
 
             // Act
             fileNames = fileNames.Zip(inputNames, (_, inputName) => Repository.GetFilename(inputName)).ToArray();
-            elements = elements.Zip(inputNames, (_, inputName) => Repository.GetType(inputName)).ToArray();
+            elements = elements.Zip(inputNames, (_, inputName) => Repository.GetElement(inputName)).ToArray();
 
             // Assert
             Assert.True(fileNames[0] == null);
