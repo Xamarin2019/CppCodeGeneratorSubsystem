@@ -35,8 +35,8 @@ namespace CppCodeGeneratorSubsystem
             Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library1::callback2", "my_library2::callback1", "std::string"));
             Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library2::callback2", "my_library1::callback2", "std::string"));
             Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library1::callback3", "my_library2::callback2", "std::string"));
-            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library2::callback3", "my_library1::callback3", "std::string"));
-
+            //Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library2::callback3", "my_library1::callback3", "std::string"));
+            Repository.AvailableTypes["\"my_library.h\""].Add(new Alias("my_library2::callback3", "my_library1::callback1", "std::string"));
             return Repository;
         }
 

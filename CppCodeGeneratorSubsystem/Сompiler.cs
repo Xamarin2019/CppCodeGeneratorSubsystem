@@ -85,7 +85,37 @@ namespace CppCodeGeneratorSubsystem
                 }
                 else
                 {
-                    DeclarationsOutput.Add(element);
+                    // DeclarationsOutput.Add(element);
+
+                    // Находим первый такой же namespace
+                    var namespaceIndex = DeclarationsOutput.FindIndex(e => e.Namespace == element.Namespace);
+
+                    // Список уже добавленных имен
+                    var qualifiedNames1 = DeclarationsOutput.Select(t => t.QualifiedName).ToList();
+
+                    // Список вложенных имен нового элемента
+                    var qualifiedNames2 = element.NestedTypes.Select(t => t.QualifiedName).ToList();
+
+                    // Находим индекс последнего вхожления одного из вложенных имен нового элемента
+                    int index = -1; int tmp = -1;
+                    if (namespaceIndex >= 0)
+                    {
+                        foreach (var qualifiedName in qualifiedNames2)
+                        {
+                            // Здесь косяк, нужно проверять уже включенные элементы, а не любой из списка для включения
+                            if (Repository.IncludeOnlyTypes.Contains(qualifiedName)) continue;
+                            tmp = qualifiedNames1.FindLastIndex(n => qualifiedName == n);
+                            index = (tmp > index) || (tmp < 0) ? tmp : index;
+                        }  
+                    }
+
+                    // Если имеется такой же namespace и он расположен после всех вхождений вложенных элементов
+                    if (namespaceIndex >= 0 && index >= 0 && index < namespaceIndex)
+                    {
+                        DeclarationsOutput.Insert(namespaceIndex + 1, element);
+                    }
+                    else DeclarationsOutput.Add(element);
+
                 }
 
             }
