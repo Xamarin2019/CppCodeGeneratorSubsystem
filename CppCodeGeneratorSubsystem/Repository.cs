@@ -33,6 +33,7 @@ namespace CppCodeGeneratorSubsystem
             Repository Repository = new Repository();
             Repository.AvailableTypes["<string>"].AddClass("std", "string");
             Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback1", "std::string", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback4", "std::string", "std::string");
             Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback1", "my_library1::callback1", "std::string");
             Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback2", "my_library2::callback1", "std::string");
             Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback2", "my_library1::callback2", "std::string");
@@ -161,39 +162,50 @@ namespace CppCodeGeneratorSubsystem
             FilesDictionary = filesDictionary;
         }
 
+ 
+
         public new void Add(Element element)
         {
             Element elementLast = this.LastOrDefault();
-            Element elementParent = element;
+            Element elementParent =  element?.Parent.Copy();
+            if (elementParent != null) elementParent.AddNested(element);
+
             List<Element> elementParents = new List<Element>();
 
-            while (elementParent.Parent != null)
+            while (elementParent != null)
             {
                 elementParents.Add(elementParent);
-                elementParent = elementParent.Parent;
 
+                element = element.Parent;
+                elementParent = element.Parent.Copy();
+                if (elementParent != null) elementParent.AddNested(element);
             }
 
-            if (elementLast == null || !(elementLast is Namespace) )
+            if (elementLast == null || !(elementParent is Namespace))
             {
+ 
                 base.Add(elementParent);
 
                 return;
             }
- 
-            {             
-                foreach (var item in elementParents)
+        
+            foreach (var item in elementParents)
+            {
+                elementParent = item;
+                if (elementLast.Equals(item))
                 {
-                    if (elementLast.Equals(item))
-                    {                       
-                        continue;
-                    }
-                    item.Parent = elementLast;
-                    elementLast.Nested.Add(item);
-                    elementLast = item;
+                    elementLast = elementLast.Nested.LastOrDefault();
+                    continue;
                 }
-  
+                else
+                {
+                    break;
+                }
             }
+
+
+            elementParent.Parent = elementLast;
+            elementLast.AddNested(elementParent);
         }
 
         public Element AddNamespace(string _namespace)
@@ -215,7 +227,7 @@ namespace CppCodeGeneratorSubsystem
                 if (elementNested == null || elementNested.Name != names[0])
                 {
                     elementNested = new Namespace(name);
-                    element.Nested.Add(new Namespace(name));
+                    element.AddNested(new Namespace(name));
                 }
                 element = elementNested;
             }
@@ -232,7 +244,7 @@ namespace CppCodeGeneratorSubsystem
                 element = AddNamespace(_namespace);
                 elementNested = new Class(_class);
                 elementNested.Parent = element;
-                element.Nested.Add(elementNested);
+                element.AddNested(elementNested);
             }
             else
             {
@@ -252,7 +264,7 @@ namespace CppCodeGeneratorSubsystem
                 element = AddNamespace(_namespace);
                 elementNested = new Alias(_name, elementReturnType, elementParameterType);
                 elementNested.Parent = element;
-                element.Nested.Add(elementNested);
+                element.AddNested(elementNested);
             }
             else
             {

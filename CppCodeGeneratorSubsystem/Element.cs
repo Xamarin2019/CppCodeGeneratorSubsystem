@@ -9,21 +9,29 @@ namespace CppCodeGeneratorSubsystem
         public string Name { get; set; }
         public string QualifiedName => Parent == null ? Name : Parent.Name + "::" + Name;
         public Element Parent { get; set; }
-        public List<Element> Nested { get; set; } = new List<Element>();
+        private List<Element> nested = new List<Element>();
+        public IReadOnlyList<Element> Nested => nested;
+        //public List<Element> Nested { get; private set; } = new List<Element>();
 
-        public Element(string name, params Element[] nested)
+        public Element(string name, params Element[] nestedElements)
         {
             // Удалим лишние пробелы, на всякий случай
             name = name.Replace(" ", string.Empty);
             if (string.IsNullOrEmpty(name)) throw new FormatException("Parameter'name' can't be empty!");
             Name = name;
 
-            foreach (var element in nested)
+            foreach (var element in nestedElements)
             {
                 element.Parent = this;
 
-                Nested.Add(element);
+                nested.Add(element);
             }
+        }
+
+        public void AddNested(Element element)
+        {
+            element.Parent = this;
+            nested.Add(element);
         }
 
         public override bool Equals(object obj)
@@ -60,10 +68,50 @@ namespace CppCodeGeneratorSubsystem
         public override string ToString()
         {
             string nestedTostring = Nested.Count != 0 ? Environment.NewLine + "    " + string.Join("    ", Nested.Select(n => n.ToString())) + Environment.NewLine : "...";
-            return $"{{{nestedTostring}}}" + Environment.NewLine;
+            return $"{{{nestedTostring}}}";
         }
 
-        public static Element operator +(Element a, Element b) { a.Nested.AddRange(b.Nested); return a; }
+        public static Element operator +(Element a, Element b) { a.nested.AddRange(b.Nested); return a; }
+
+        public Element Copy()
+        {
+            Element element = this, elementNew, elementParent;
+            switch (element)
+            {
+                case Namespace Namespace:
+                    elementNew = new Namespace(Namespace.Name);
+                    break;
+
+                case Class Class when (Class is Class):
+                    elementNew = new Class(Class.Name);
+                    break;
+
+                case Struct Struct when (Struct is Struct):
+                    elementNew = new Struct(Struct.Name);
+                    break;
+
+                case Alias Alias:
+                    elementNew = new Alias(Alias.Name, Alias.Nested[0], Alias.Nested[1]);
+                    break;
+
+                default:
+                    elementNew = null;
+                    break;
+            }
+
+            if (elementNew != null)
+            {
+                elementNew.Parent = element.Parent?.Copy();
+                //elementParent = elementNew.Parent;
+                //while (element.Parent != null)
+                //{
+                //    elementParent = element.Parent.Copy();
+                //    element = element.Parent;
+                //    elementParent = elementParent.Parent;
+                //}
+            }
+            return elementNew;
+        }
     }
 
     public class Namespace : Element
@@ -108,7 +156,7 @@ namespace CppCodeGeneratorSubsystem
 
         public override string ToString()
         {
-            return $"{Template}class {Name}{base.ToString()};";
+            return $"{Template}class {Name}{base.ToString()};" + Environment.NewLine;
         }
     }
 
@@ -120,7 +168,7 @@ namespace CppCodeGeneratorSubsystem
         }
         public override string ToString()
         {
-            return $"{Template}struct {Name};";
+            return $"{Template}struct {Name};" + Environment.NewLine;
         }
 
     }
@@ -140,13 +188,13 @@ namespace CppCodeGeneratorSubsystem
         /// </example>
         public Alias(string name, Element returnType, Element parameterType) : base(name)
         {
-            Nested.Add(returnType);
-            Nested.Add(parameterType);
+            AddNested(returnType);
+            AddNested(parameterType);
         }
 
         public override string ToString()
         {
-            return $"using {Name} = {Nested[0]?.QualifiedName ?? "No data"}* (*)({Nested[1]?.QualifiedName ?? "No data"});";
+            return $"using {Name} = {Nested[0]?.QualifiedName ?? "No data"}* (*)({Nested[1]?.QualifiedName ?? "No data"});" + Environment.NewLine;
         }
     }
 }
