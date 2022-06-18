@@ -9,7 +9,30 @@ namespace CppCodeGeneratorSubsystem.Tests
     public class InputTest : RedirectConsoleOutput
     {
         public InputTest(ITestOutputHelper output) : base(output) { }
- 
+
+        [Fact]
+        public void Test_ElementListFind()
+        {
+            // Arrange
+            Repository Repository = new Repository();
+            Repository.AvailableTypes["<string>"].AddClass("std", "string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback1", "std::string", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback2", "std::string", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback1", "my_library1::callback2", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback1", "my_library1::callback3", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback3", "my_library2::callback1", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback2", "my_library1::callback2", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2::my_library3", "callback2", "my_library1::callback2", "std::string");
+
+            // Act
+            Element element = Repository.AvailableTypes.FindElement("my_library1::callback3");
+
+
+            // Assert
+
+
+        }
+
         [Fact]
         public void Test_ElementList()
         {
@@ -17,15 +40,25 @@ namespace CppCodeGeneratorSubsystem.Tests
             Repository Repository = new Repository();
             Repository.AvailableTypes["<string>"].AddClass("std", "string");
             Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback1", "std::string", "std::string");
-            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback4", "std::string", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback2", "std::string", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback1", "my_library1::callback2", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback1", "my_library1::callback3", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback3", "my_library2::callback1", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback2", "my_library1::callback2", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2::my_library3", "callback2", "my_library1::callback2", "std::string");
+
             string[] Declarations = { "my_library1::callback1", "my_library2::callback1", "my_library1::callback2", "my_library2::callback2", "my_library1::callback3", "my_library2::callback3" };
             ElementList DeclarationsOutput = new ElementList(Repository.AvailableTypes);
 
             // Act
-            Element element = Repository.AvailableTypes.FindElement("my_library1::callback1");
-            DeclarationsOutput.Add(element);
+            Element element1 = Repository.AvailableTypes.FindElement("my_library1::callback1");
+            DeclarationsOutput.Add(element1);
+            Element element2 = Repository.AvailableTypes.FindElement("my_library1::callback2");
+            DeclarationsOutput.Add(element2);
+            Element element3 = Repository.AvailableTypes.FindElement("my_library1::callback2");
+            DeclarationsOutput.Add(element3);
 
-
+            Console.WriteLine(DeclarationsOutput.FirstOrDefault());
             // Assert
 
 
@@ -38,6 +71,7 @@ namespace CppCodeGeneratorSubsystem.Tests
             Element element = new Namespace("TestNamespace_1");
             element.AddNested(new Class("TestClass_1"));
             element.AddNested(new Class("TestClass_2"));
+            element.Nested.FirstOrDefault().AddNested(new Class("TestClass_3"));
 
             Element nested = element.Nested[0];
             //Repository Repository = new Repository();
@@ -48,12 +82,45 @@ namespace CppCodeGeneratorSubsystem.Tests
             //ElementList DeclarationsOutput = new ElementList(Repository.AvailableTypes);
 
             // Act
+            //Element result = nested.CopyParent();
+            //result = nested.CopyNested(result);
+
             Element result = nested.Copy();
-
-
             Console.WriteLine(element);
             // Assert
 
+
+        }
+
+        [Fact]
+        public void Test_ElementListFindNested()
+        {
+            // Arrange
+            Repository Repository = new Repository();
+            Repository.AvailableTypes["<string>"].AddClass("std", "string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback1", "std::string", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback4", "std::string", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback1", "my_library1::callback1", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback2", "my_library2::callback1", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback2", "my_library1::callback2", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback3", "my_library2::callback2", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback3", "my_library1::callback3", "std::string");
+
+            ElementList DeclarationsOutput = new ElementList(Repository.AvailableTypes);
+
+            Element element1 = Repository.AvailableTypes.FindElement("my_library1::callback1");
+            DeclarationsOutput.Add(element1);
+            Element element2 = Repository.AvailableTypes.FindElement("my_library1::callback2");
+            DeclarationsOutput.Add(element2);
+            Element element3 = Repository.AvailableTypes.FindElement("my_library1::callback2");
+            DeclarationsOutput.Add(element3);
+
+            // Act
+            Element element = Repository.AvailableTypes.FindElement("my_library1::callback2");
+            var elements = DeclarationsOutput.FindNested(element);
+
+
+            // Assert
 
         }
 

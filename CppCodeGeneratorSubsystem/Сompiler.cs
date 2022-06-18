@@ -73,17 +73,15 @@ namespace CppCodeGeneratorSubsystem
                 if (element == null) throw new NullReferenceException("Type was not found in the repository!");
 
                 // Если тип уже попадался, пропускаем
-                if (DeclarationsOutput.Contains(element)) continue;
+                //if (DeclarationsOutput.Contains(element)) continue;
 
                 // Пробежимся по вложенным типам
-                //GetElements(element.Nested.Select(t => t.QualifiedName));
+                GetElements(element.Nested.Select(t => t.QualifiedName));
 
                 // И добавляем к ним зависимый тип
                 DeclarationsOutput.Add(element);
  
-                    //DeclarationsOutput = new Element[] { element }.Concat(DeclarationsOutput);
-  
-
+                //DeclarationsOutput = new Element[] { element }.Concat(DeclarationsOutput);
             }
 
             IncludesOutput = IncludesOutput.Distinct().OrderBy(k => k).ToList();

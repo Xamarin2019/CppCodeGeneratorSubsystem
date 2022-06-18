@@ -91,15 +91,18 @@ namespace CppCodeGeneratorSubsystem
             Element element;
             var names = typeName.Split("::");
             element = this.SelectMany(d => d.Value).FirstOrDefault(e => e.Name == names[0]);
+            IEnumerable<Element> elements = this.SelectMany(d => d.Value).Where(e => e.Name == names[0]);
+
             if (element == null) return element;
 
             foreach (var name in names.Skip(1))
             {
-                element = element.Nested.LastOrDefault(e => e.Name == name);
-                if (element == null) return element;
+                elements = elements.SelectMany(e => e.Nested).Where(e => e.Name == name);
+                //element = element.Nested.LastOrDefault(e => e.Name == name);
+                if (elements == null) return element;
             }
 
-            return element;
+            return elements.LastOrDefault();
         }
 
         public Element FindElement(string fileName, string typeName)
@@ -162,56 +165,85 @@ namespace CppCodeGeneratorSubsystem
             FilesDictionary = filesDictionary;
         }
 
- 
+        public IEnumerable<Element> FindNested(Element element)
+        {
+            List<Element> elements1 = this;
+            List<Element> elements2 = element.Nested.ToList();
+            //Element elementLast = element;
+            Element element1; Element element2;
+
+            for (int i = 0; i < elements1.Count(); i++)
+            {
+                element1 = elements1[i];
+
+                for (int j = 0; j < elements2.Count(); j++)
+                {
+                    element2 = elements2[j];
+
+                    if (element1.Equals(element2)) elements1.RemoveRange(0, i);
+                    return elements1;
+                }
+            }
+
+            //foreach (var item in elements)
+            //{
+            //    while (nestedElements.Count() != 0)
+            //    {
+            //        if (item.EqualsTypeName())
+
+            //       nestedElements = nestedElements.SelectMany(e => e.Nested);
+            //    }
+                
+            //}
+
+            return elements1;
+        }
 
         public new void Add(Element element)
         {
-            Element elementLast = this.LastOrDefault();
-            Element elementParent =  element?.Parent.Copy();
-            if (elementParent != null) elementParent.AddNested(element);
+            IEnumerable<Element> elements = this;
+            Element elementLast = null;
+            Element elementCopy = element.Copy();
+            while (elementCopy.Parent != null) elementCopy = elementCopy.Parent;
 
-            List<Element> elementParents = new List<Element>();
-
-            while (elementParent != null)
+            if (Contains(elementCopy))
             {
-                elementParents.Add(elementParent);
-
-                element = element.Parent;
-                elementParent = element.Parent.Copy();
-                if (elementParent != null) elementParent.AddNested(element);
+                return;
             }
 
-            if (elementLast == null || !(elementParent is Namespace))
+            if (elements.Count() == 0)
             {
- 
-                base.Add(elementParent);
+                base.Add(elementCopy);
 
                 return;
             }
-        
-            foreach (var item in elementParents)
+
+            while (elements.Count() != 0)
             {
-                elementParent = item;
-                if (elementLast.Equals(item))
+ 
+                elementLast = elements.LastOrDefault();
+
+                elements = elements.Where(e => e.EqualsTypeName(elementCopy)).SelectMany(e => e.Nested).ToList();
+ 
+                if (elements.Count() != 0)
                 {
-                    elementLast = elementLast.Nested.LastOrDefault();
-                    continue;
+                    elementCopy = elementCopy.Nested.LastOrDefault();
                 }
-                else
-                {
-                    break;
-                }
+                if (elementCopy == null) return;
             }
 
+            if (elementLast.Parent == null)
+            {
+                base.Add(elementCopy);
 
-            elementParent.Parent = elementLast;
-            elementLast.AddNested(elementParent);
+                return;
+            }
+            elementLast.Parent.AddNested(elementCopy);
         }
 
         public Element AddNamespace(string _namespace)
         {
             Element element = this.LastOrDefault();
-            Element elementNested;
 
             var names = _namespace.Split("::");
 
@@ -223,13 +255,11 @@ namespace CppCodeGeneratorSubsystem
 
             foreach (var name in names.Skip(1))
             {
-                elementNested = element.Nested.LastOrDefault();
-                if (elementNested == null || elementNested.Name != names[0])
+                if (element == null || element.Name != name)
                 {
-                    elementNested = new Namespace(name);
                     element.AddNested(new Namespace(name));
                 }
-                element = elementNested;
+                element = element.Nested.LastOrDefault();
             }
 
             return element;
@@ -243,7 +273,6 @@ namespace CppCodeGeneratorSubsystem
             {
                 element = AddNamespace(_namespace);
                 elementNested = new Class(_class);
-                elementNested.Parent = element;
                 element.AddNested(elementNested);
             }
             else
@@ -252,18 +281,21 @@ namespace CppCodeGeneratorSubsystem
             }
     
         }
+        public void AddClass(string _class)
+        {
+            AddClass(null, _class);
+        }
 
         public void AddAlias(string _namespace, string _name, string returnType, string parameterType)
         {
             Element element;
             Element elementNested;
             Element elementReturnType = Find(returnType);
-            Element elementParameterType = Find(returnType);
+            Element elementParameterType = Find(parameterType);
             if (_namespace != null)
             {
                 element = AddNamespace(_namespace);
                 elementNested = new Alias(_name, elementReturnType, elementParameterType);
-                elementNested.Parent = element;
                 element.AddNested(elementNested);
             }
             else
@@ -274,10 +306,6 @@ namespace CppCodeGeneratorSubsystem
 
         }
 
-        public void AddClass( string _class)
-        {
-            AddClass( null, _class);
-        }
 
 
         public Element Find(string qialifiedName)

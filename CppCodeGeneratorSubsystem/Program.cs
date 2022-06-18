@@ -11,7 +11,12 @@ namespace CppCodeGeneratorSubsystem
  
             Сompiler compiler = new Сompiler(Repository)
             {
-                Declarations = { "my_library1::callback1", "my_library2::callback1", "my_library1::callback2", "my_library2::callback2", "my_library1::callback3", "my_library2::callback3" }
+                Declarations = { "my_library1::callback1",
+                                 "my_library2::callback1",
+                                 "my_library1::callback2", 
+                                 "my_library2::callback2", 
+                                 "my_library1::callback3", 
+                                 "my_library2::callback3" }
             };
 
 

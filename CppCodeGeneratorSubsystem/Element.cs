@@ -6,19 +6,22 @@ namespace CppCodeGeneratorSubsystem
 {
     public abstract class Element
     {
-        public string Name { get; set; }
-        public string QualifiedName => Parent == null ? Name : Parent.Name + "::" + Name;
+        public string Name { get; protected set; }
+        //public string QualifiedName => Parent == null ? Name : Parent.Name + "::" + Name;
+        public string QualifiedName { get; private set; }
         public Element Parent { get; set; }
+
         private List<Element> nested = new List<Element>();
         public IReadOnlyList<Element> Nested => nested;
         //public List<Element> Nested { get; private set; } = new List<Element>();
+
 
         public Element(string name, params Element[] nestedElements)
         {
             // Удалим лишние пробелы, на всякий случай
             name = name.Replace(" ", string.Empty);
             if (string.IsNullOrEmpty(name)) throw new FormatException("Parameter'name' can't be empty!");
-            Name = name;
+            QualifiedName = Name = name;
 
             foreach (var element in nestedElements)
             {
@@ -30,7 +33,11 @@ namespace CppCodeGeneratorSubsystem
 
         public void AddNested(Element element)
         {
-            element.Parent = this;
+            if (!(this is Alias))
+            {
+                element.Parent = this;
+                element.QualifiedName = QualifiedName + "::" + element.QualifiedName;
+            }
             nested.Add(element);
         }
 
@@ -46,17 +53,34 @@ namespace CppCodeGeneratorSubsystem
                           && QualifiedName.Equals(item.QualifiedName);
             if (result == false) return result;
 
-            if (Parent != null) result = Parent.Equals(item.Parent);
-            if (result == false) return result;
-
-            if (Parent == null) result = item.Parent == null;
-            if (result == false) return result;
-
             if (Nested.Count == item.Nested.Count)
             {
                 for (int i = 0; i < Nested.Count; i++) if (!Nested[i].Equals(item.Nested[i])) return false;
             }
+            else
+            {
+                return false;
+            }
 
+            //if (Parent != null) result = Parent.Equals(item.Parent);
+            //if (result == false) return result;
+
+            //if (Parent == null) result = item.Parent == null;
+            //if (result == false) return result;
+ 
+            return result;
+        }
+
+        public bool EqualsTypeName(object obj)
+        {
+            if ((obj == null) || !this.GetType().Equals(obj.GetType()))
+            {
+                return false;
+            }
+            var item = obj as Element;
+
+            bool result = Name.Equals(item.Name);
+            
             return result;
         }
 
@@ -71,11 +95,9 @@ namespace CppCodeGeneratorSubsystem
             return $"{{{nestedTostring}}}";
         }
 
-        public static Element operator +(Element a, Element b) { a.nested.AddRange(b.Nested); return a; }
-
-        public Element Copy()
+        Element CopyThis()
         {
-            Element element = this, elementNew, elementParent;
+            Element element = this, elementNew;
             switch (element)
             {
                 case Namespace Namespace:
@@ -91,7 +113,8 @@ namespace CppCodeGeneratorSubsystem
                     break;
 
                 case Alias Alias:
-                    elementNew = new Alias(Alias.Name, Alias.Nested[0], Alias.Nested[1]);
+                    //elementNew = new Alias(Alias.Name, Alias.Nested[0], Alias.Nested[1]);
+                    elementNew = new Alias(Alias.Name);
                     break;
 
                 default:
@@ -99,19 +122,43 @@ namespace CppCodeGeneratorSubsystem
                     break;
             }
 
-            if (elementNew != null)
-            {
-                elementNew.Parent = element.Parent?.Copy();
-                //elementParent = elementNew.Parent;
-                //while (element.Parent != null)
-                //{
-                //    elementParent = element.Parent.Copy();
-                //    element = element.Parent;
-                //    elementParent = elementParent.Parent;
-                //}
-            }
             return elementNew;
         }
+
+        Element CopyParent()
+        {
+            Element element = this, elementNew;
+ 
+             elementNew = CopyThis();
+                    
+
+            if (elementNew != null)
+            {
+                if (element.Parent != null) element.Parent.CopyThis().AddNested(elementNew);
+             }
+
+            return elementNew;
+        }
+
+        Element CopyNested(Element elementNew)
+        {
+            Element element = this;
+ 
+                foreach (var item in element.nested)
+                {
+                    elementNew.AddNested(item.Copy());
+                }
+
+            return elementNew;
+        }
+
+        public Element Copy()
+        {
+            return CopyNested(CopyParent());
+        }
+
+        //public static Element operator +(Element a, Element b) { a.nested.AddRange(b.Nested); return a; }
+
     }
 
     public class Namespace : Element
@@ -187,14 +234,30 @@ namespace CppCodeGeneratorSubsystem
         /// </code>
         /// </example>
         public Alias(string name, Element returnType, Element parameterType) : base(name)
+        {   if (returnType != null && parameterType != null)
+            {
+                AddNested(returnType);
+                AddNested(parameterType);
+            }
+            else
+            {
+
+            }
+        }
+
+        public Alias(string name) : base(name)
         {
-            AddNested(returnType);
-            AddNested(parameterType);
+
         }
 
         public override string ToString()
-        {
-            return $"using {Name} = {Nested[0]?.QualifiedName ?? "No data"}* (*)({Nested[1]?.QualifiedName ?? "No data"});" + Environment.NewLine;
+        {   
+            if (Nested.Count > 1) 
+                return $"using {Name} = {Nested[0]?.QualifiedName ?? "Unknown"}* (*)({Nested[1]?.QualifiedName ?? "Unknown"});" + Environment.NewLine;
+            if (Nested.Count > 0)
+                return $"using {Name} = {Nested[0]?.QualifiedName ?? "Unknown"}* (*)(Unknown);" + Environment.NewLine;
+            else
+                return $"using {Name} = Unknown* (*)(Unknown);" + Environment.NewLine;
         }
     }
 }
