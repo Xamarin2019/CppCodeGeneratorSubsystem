@@ -72,9 +72,6 @@ namespace CppCodeGeneratorSubsystem
                 // Если типа нет в репозитории, выбрасывам исключение
                 if (element == null) throw new NullReferenceException("Type was not found in the repository!");
 
-                // Если тип уже попадался, пропускаем
-                //if (DeclarationsOutput.Contains(element)) continue;
-
                 // Пробежимся по вложенным типам
                 GetElements(element.Nested.Select(t => t.QualifiedName));
 

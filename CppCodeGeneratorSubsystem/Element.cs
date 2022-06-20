@@ -7,15 +7,12 @@ namespace CppCodeGeneratorSubsystem
     public abstract class Element
     {
         public string Name { get; protected set; }
-        //public string QualifiedName => Parent == null ? Name : Parent.Name + "::" + Name;
         public string QualifiedName { get; private set; }
         public Element Parent { get; set; }
 
         private List<Element> nested = new List<Element>();
         public IReadOnlyList<Element> Nested => nested;
-        //public List<Element> Nested { get; private set; } = new List<Element>();
-
-
+ 
         public Element(string name, params Element[] nestedElements)
         {
             // Удалим лишние пробелы, на всякий случай
@@ -91,8 +88,8 @@ namespace CppCodeGeneratorSubsystem
 
         public override string ToString()
         {
-            string nestedTostring = Nested.Count != 0 ? Environment.NewLine + "    " + string.Join("    ", Nested.Select(n => n.ToString())) + Environment.NewLine : "...";
-            return $"{{{nestedTostring}}}";
+            string nestedTostring = Nested.Count != 0 ? Environment.NewLine + "    " + string.Join("    ", Nested.Select(n => n.ToString())) : "...";
+            return Environment.NewLine + $"{{{nestedTostring}}}" + Environment.NewLine + Environment.NewLine;
         }
 
         Element CopyThis()
@@ -157,6 +154,12 @@ namespace CppCodeGeneratorSubsystem
             return CopyNested(CopyParent());
         }
 
+        public Element FirstParent()
+        {
+            Element element = this;
+            while (element.Parent != null) element = element.Parent;
+            return element;
+        }
         //public static Element operator +(Element a, Element b) { a.nested.AddRange(b.Nested); return a; }
 
     }
@@ -190,7 +193,7 @@ namespace CppCodeGeneratorSubsystem
             set { template = value; }
         }
 
-        public Class(string name, params Element[] nested) : base(name, nested)
+        public Class(string name) : base(name)
         {
             // Если есть шаблон, сохраняем его отдельно
             var findTemlate = Name.IndexOf("<");

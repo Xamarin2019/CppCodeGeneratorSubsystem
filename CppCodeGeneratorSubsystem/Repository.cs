@@ -38,7 +38,7 @@ namespace CppCodeGeneratorSubsystem
             Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback2", "my_library2::callback1", "std::string");
             Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback2", "my_library1::callback2", "std::string");
             Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback3", "my_library2::callback2", "std::string");
-            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback3", "my_library1::callback3", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback3", "my_library1::callback1", "std::string");
 
             return Repository;
         }
@@ -86,7 +86,6 @@ namespace CppCodeGeneratorSubsystem
         {
             typeName = typeName.Replace(" ", string.Empty);
             if (string.IsNullOrEmpty(typeName)) throw new FormatException("Parameter'typeName' can't be empty!");
-            //Element element = this.SelectMany(d => d.Value).FirstOrDefault(e => e.QualifiedName == elementName);
 
             Element element;
             var names = typeName.Split("::");
@@ -98,7 +97,6 @@ namespace CppCodeGeneratorSubsystem
             foreach (var name in names.Skip(1))
             {
                 elements = elements.SelectMany(e => e.Nested).Where(e => e.Name == name);
-                //element = element.Nested.LastOrDefault(e => e.Name == name);
                 if (elements == null) return element;
             }
 
@@ -114,14 +112,6 @@ namespace CppCodeGeneratorSubsystem
 
             Element element = null;
             var names = typeName.Split("::");
-            //element = this[fileName].FirstOrDefault(e => e.Name == names[0]);
-            //if (element == null) return element;
-
-            //foreach (var name in names.Skip(1))
-            //{
-            //    element = element.Nested.LastOrDefault(e => e.Name == name);
-            //    if (element == null) return element;
-            //}
 
             var elements = this[fileName].Where(e => e.Name == names[0]);
             if (elements.Count() == 0) return null;
@@ -165,46 +155,38 @@ namespace CppCodeGeneratorSubsystem
             FilesDictionary = filesDictionary;
         }
 
-        public IEnumerable<Element> FindNested(Element element)
+        public int FindNested(Element element)
         {
             List<Element> elements1 = this;
             List<Element> elements2 = element.Nested.ToList();
-            //Element elementLast = element;
+ 
             Element element1; Element element2;
+            int index = 0;
 
             for (int i = 0; i < elements1.Count(); i++)
             {
                 element1 = elements1[i];
 
                 for (int j = 0; j < elements2.Count(); j++)
-                {
-                    element2 = elements2[j];
+                { 
+                    element2 = elements2[j].Copy().FirstParent();
 
-                    if (element1.Equals(element2)) elements1.RemoveRange(0, i);
-                    return elements1;
+                    if (element1.Equals(element2)) index = index > i ? index : i;
+ 
                 }
             }
 
-            //foreach (var item in elements)
-            //{
-            //    while (nestedElements.Count() != 0)
-            //    {
-            //        if (item.EqualsTypeName())
-
-            //       nestedElements = nestedElements.SelectMany(e => e.Nested);
-            //    }
-                
-            //}
-
-            return elements1;
+            return index;
         }
 
         public new void Add(Element element)
         {
             IEnumerable<Element> elements = this;
             Element elementLast = null;
-            Element elementCopy = element.Copy();
-            while (elementCopy.Parent != null) elementCopy = elementCopy.Parent;
+            Element elementCopy = element.Copy().FirstParent();
+
+            // Пропускаем элементы списка в которых встречаются вложенные типы нового элемента
+            elements = elements.Skip(FindNested(element)).ToList();
 
             if (Contains(elementCopy))
             {
@@ -218,10 +200,12 @@ namespace CppCodeGeneratorSubsystem
                 return;
             }
 
+
+            // Выбираем удобное место для парковки
             while (elements.Count() != 0)
             {
  
-                elementLast = elements.LastOrDefault();
+                elementLast = elements.FirstOrDefault();
 
                 elements = elements.Where(e => e.EqualsTypeName(elementCopy)).SelectMany(e => e.Nested).ToList();
  
@@ -232,12 +216,14 @@ namespace CppCodeGeneratorSubsystem
                 if (elementCopy == null) return;
             }
 
-            if (elementLast.Parent == null)
+            // Если корневой элемент то добавляем
+            if (elementLast == null || elementLast.Parent == null)
             {
                 base.Add(elementCopy);
 
                 return;
             }
+            // Если вложенный, то добавляем ко вложенному
             elementLast.Parent.AddNested(elementCopy);
         }
 
@@ -305,9 +291,7 @@ namespace CppCodeGeneratorSubsystem
 
 
         }
-
-
-
+ 
         public Element Find(string qialifiedName)
         {
             Element element = FilesDictionary.FindElement(qialifiedName);
