@@ -104,7 +104,7 @@ namespace CppCodeGeneratorSubsystem
             // Генерируем предварительные объявления 
             foreach (var element in DeclarationsOutput)
             {
-                output += element;
+                output += element + Environment.NewLine;
             }
  
 

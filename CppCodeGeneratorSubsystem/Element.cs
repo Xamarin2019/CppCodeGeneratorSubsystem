@@ -6,8 +6,26 @@ namespace CppCodeGeneratorSubsystem
 {
     public abstract class Element
     {
+        protected string bareName;
         public string Name { get; protected set; }
-        public string QualifiedName { get; private set; }
+        public string QualifiedName { get; protected set; }
+ 
+        string template = "";
+        public string Template
+        {
+            get
+            {
+                // Если есть шаблон, формируем
+                if (!string.IsNullOrEmpty(template))
+                    return "tempalate <" + string.Join(", ", template.Trim('<', '>').Split(",").Select(t => "typename " + t).ToArray()) + "> ";
+                return template;
+            }
+
+            set
+            {
+                template = value;
+            }
+        }
         public Element Parent { get; set; }
 
         private List<Element> nested = new List<Element>();
@@ -18,7 +36,17 @@ namespace CppCodeGeneratorSubsystem
             // Удалим лишние пробелы, на всякий случай
             name = name.Replace(" ", string.Empty);
             if (string.IsNullOrEmpty(name)) throw new FormatException("Parameter'name' can't be empty!");
-            QualifiedName = Name = name;
+
+            Name = bareName = name;
+
+            // Если есть шаблон, сохраняем его отдельно
+            var findTemlate = Name.IndexOf("<");
+            if (findTemlate > 0)
+            {
+                Template = Name.Substring(findTemlate);
+                bareName = Name.Remove(findTemlate);
+            }
+            QualifiedName = Name + template;
 
             foreach (var element in nestedElements)
             {
@@ -88,8 +116,8 @@ namespace CppCodeGeneratorSubsystem
 
         public override string ToString()
         {
-            string nestedTostring = Nested.Count != 0 ? Environment.NewLine + "    " + string.Join("    ", Nested.Select(n => n.ToString())) : "...";
-            return Environment.NewLine + $"{{{nestedTostring}}}" + Environment.NewLine + Environment.NewLine;
+            string nestedTostring = Nested.Count != 0 ? Environment.NewLine + "{" + Environment.NewLine + "    " + string.Join("    ", Nested.Select(n => n.ToString())) + "}" + Environment.NewLine : "";
+            return $"{nestedTostring}";
         }
 
         Element CopyThis()
@@ -172,45 +200,23 @@ namespace CppCodeGeneratorSubsystem
         }
         public override string ToString()
         {
-            return $"namespace {Name}" + base.ToString();
+            return $"namespace {bareName}" + base.ToString();
         }
     }
 
     public class Class : Element
     {
-        public new string QualifiedName => base.QualifiedName + template;
-        string template = "";
-        public string Template
-        {
-            get
-            {
-                // Если есть шаблон, формируем
-                if (!string.IsNullOrEmpty(template))
-                    return "tempalate <" + string.Join(", ", template.Trim('<', '>').Split(",").Select(t => "typename " + t).ToArray()) + "> ";
-                return template;
-            }
-
-            set { template = value; }
-        }
-
         public Class(string name) : base(name)
         {
-            // Если есть шаблон, сохраняем его отдельно
-            var findTemlate = Name.IndexOf("<");
-            if (findTemlate > 0)
-            {
-                Template = Name.Substring(findTemlate);
-                Name = Name.Remove(findTemlate);
-            }
+            
         }
-
         public override string ToString()
         {
-            return $"{Template}class {Name}{base.ToString()};" + Environment.NewLine;
+            return $"{Template}class {bareName}{base.ToString()};" + Environment.NewLine;
         }
     }
 
-    public class Struct : Class
+    public class Struct : Element
     {
         public Struct(string name) : base(name)
         {
@@ -218,7 +224,7 @@ namespace CppCodeGeneratorSubsystem
         }
         public override string ToString()
         {
-            return $"{Template}struct {Name};" + Environment.NewLine;
+            return $"{Template}struct {bareName};" + Environment.NewLine;
         }
 
     }
@@ -256,11 +262,11 @@ namespace CppCodeGeneratorSubsystem
         public override string ToString()
         {   
             if (Nested.Count > 1) 
-                return $"using {Name} = {Nested[0]?.QualifiedName ?? "Unknown"}* (*)({Nested[1]?.QualifiedName ?? "Unknown"});" + Environment.NewLine;
+                return $"using {bareName} = {Nested[0]?.QualifiedName ?? "Unknown"}* (*)({Nested[1]?.QualifiedName ?? "Unknown"});" + Environment.NewLine;
             if (Nested.Count > 0)
-                return $"using {Name} = {Nested[0]?.QualifiedName ?? "Unknown"}* (*)(Unknown);" + Environment.NewLine;
+                return $"using {bareName} = {Nested[0]?.QualifiedName ?? "Unknown"}* (*)(Unknown);" + Environment.NewLine;
             else
-                return $"using {Name} = Unknown* (*)(Unknown);" + Environment.NewLine;
+                return $"using {bareName} = Unknown* (*)(Unknown);" + Environment.NewLine;
         }
     }
 }

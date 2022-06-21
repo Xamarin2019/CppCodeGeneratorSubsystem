@@ -116,6 +116,8 @@ namespace CppCodeGeneratorSubsystem
             var elements = this[fileName].Where(e => e.Name == names[0]);
             if (elements.Count() == 0) return null;
 
+            element = elements.LastOrDefault();
+
             foreach (var item in elements)
             {
                 foreach (var name in names.Skip(1))
@@ -135,13 +137,13 @@ namespace CppCodeGeneratorSubsystem
             if (string.IsNullOrEmpty(typeName)) throw new FormatException("Parameter'typeName' can't be empty!");
             var names = typeName.Split("::");
             string fileName = this.Where(d => d.Value.Exists(e => e.Name == names[0])).FirstOrDefault().Key;
+
+            if (fileName == null) return null;
+
             Element element = FindElement(fileName, typeName);
 
-            if (element == null)
-            {
-                return null;
-            }
-
+            if (element == null) return null;
+         
             return fileName;
         }
     }
@@ -272,6 +274,27 @@ namespace CppCodeGeneratorSubsystem
             AddClass(null, _class);
         }
 
+        public void AddStruct(string _namespace, string _struct)
+        {
+            Element element;
+            Element elementNested;
+            if (_namespace != null)
+            {
+                element = AddNamespace(_namespace);
+                elementNested = new Struct(_struct);
+                element.AddNested(elementNested);
+            }
+            else
+            {
+                base.Add(new Struct(_struct));
+            }
+
+        }
+        public void AddStruct(string _struct)
+        {
+            AddStruct(null, _struct);
+        }
+
         public void AddAlias(string _namespace, string _name, string returnType, string parameterType)
         {
             Element element;
@@ -291,7 +314,12 @@ namespace CppCodeGeneratorSubsystem
 
 
         }
- 
+
+        public void AddAlias(string _name, string returnType, string parameterType)
+        {
+            AddAlias(null, _name, returnType, parameterType);
+        }
+
         public Element Find(string qialifiedName)
         {
             Element element = FilesDictionary.FindElement(qialifiedName);
