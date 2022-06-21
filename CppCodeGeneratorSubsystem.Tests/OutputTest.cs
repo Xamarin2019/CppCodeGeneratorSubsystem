@@ -197,6 +197,69 @@ namespace CppCodeGeneratorSubsystem.Tests
         public void Test5()
         {
             // Arrange
+            string expected = @"#include<string>
+
+                                namespace my_library1
+                                {
+                                    using callback1=std::string*(*)(std::string);
+                                }
+
+                                namespace my_library2
+                                {
+                                    using callback1=my_library1::callback1*(*)(std::string);
+                                    using callback3 = my_library1::callback1* (*)(std::string);
+                                    namespace enums
+                                    {
+                                        enum enum1;
+                                    }
+                                }
+
+                                namespacemy_library1
+                                {
+                                    using callback2=my_library2::callback1*(*)(std::string);
+                                }
+
+                                namespace my_library2
+                                {
+                                    using callback2=my_library1::callback2*(*)(std::string);
+                                }
+
+                                namespace my_library1
+                                {
+                                    using callback3=my_library2::callback2*(*)(std::string);
+                                }";
+
+            Repository Repository = new Repository();
+            Repository.AvailableTypes["<string>"].AddClass("std", "string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback1", "std::string", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback1", "my_library1::callback1", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback2", "my_library2::callback1", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback2", "my_library1::callback2", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library1", "callback3", "my_library2::callback2", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddAlias("my_library2", "callback3", "my_library1::callback1", "std::string");
+            Repository.AvailableTypes["\"my_library.h\""].AddEnum("my_library2::enums", "enum1");
+
+            Сompiler compiler = new Сompiler(Repository)
+            {
+                //Declarations = { "my_library2::enums::enum1" }
+                Declarations = { "my_library1::callback1", "my_library2::callback1", "my_library1::callback2", "my_library2::callback2", "my_library1::callback3", "my_library2::callback3", "my_library2::enums::enum1" }
+            };
+
+            // Act
+            Console.WriteLine(compiler.BuildOutput());
+
+            var result = textWriter;
+
+            // Assert
+            var actual = result.ToString().Replace(" ", string.Empty).Trim();
+            Assert.True(actual == expected.Replace(" ", string.Empty).Trim());
+        }
+
+
+        [Fact]
+        public void Test6()
+        {
+            // Arrange
 
             Repository Repository = new Repository();
             Repository.AvailableTypes["<string>"].AddClass("std::string");

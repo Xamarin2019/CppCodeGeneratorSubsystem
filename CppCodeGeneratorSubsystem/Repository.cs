@@ -111,21 +111,19 @@ namespace CppCodeGeneratorSubsystem
             if (!this.ContainsKey(fileName)) throw new NullReferenceException($"'{fileName}' not found in AvailableTypes!");
 
             Element element = null;
-            var names = typeName.Split("::");
-
-            var elements = this[fileName].Where(e => e.Name == names[0]);
+            var names = typeName.Split("::").GetEnumerator();
+            names.MoveNext();
+            var elements = this[fileName].Where(e => e.Name == (string)names.Current);
             if (elements.Count() == 0) return null;
 
-            element = elements.LastOrDefault();
-
-            foreach (var item in elements)
+            string name;
+            while (elements.Count() != 0)
             {
-                foreach (var name in names.Skip(1))
-                {
-                    element = item.Nested.LastOrDefault(e => e.Name == name);
-                    if (element == null) continue;
-                    return element;
-                }
+
+                name = (string)names.Current;
+                element = elements.Where(e => e.Name == name).LastOrDefault();
+                elements = elements.Where(e => e.Name == name).SelectMany(e => e.Nested).ToList();
+                if (!names.MoveNext()) break;
             }
 
             return element;
@@ -136,14 +134,25 @@ namespace CppCodeGeneratorSubsystem
             typeName = typeName.Replace(" ", string.Empty);
             if (string.IsNullOrEmpty(typeName)) throw new FormatException("Parameter'typeName' can't be empty!");
             var names = typeName.Split("::");
-            string fileName = this.Where(d => d.Value.Exists(e => e.Name == names[0])).FirstOrDefault().Key;
+            //IEnumerable<KeyValuePair<string, ElementList>> files;
+            //foreach (var name in names)
+            //{
+            //     files = this.Where(d => d.Value.Exists(e => e.Name == name));
+            //}
 
-            if (fileName == null) return null;
+            var files = this.Where(d => d.Value.Exists(e => e.Name == names[0]));
+            if (files.Count() == 0) return null;
+            // string fileName = this.Where(d => d.Value.Exists(e => e.Name == names[0])).FirstOrDefault().Key;
+            //if (fileName == null) return null;
 
-            Element element = FindElement(fileName, typeName);
+            string fileName = null;
+            Element element = null;
+            foreach (var file in files)
+            {
+                element = FindElement(file.Key, typeName);
+                if (element != null) fileName = file.Key;
+            }
 
-            if (element == null) return null;
-         
             return fileName;
         }
     }
@@ -318,6 +327,27 @@ namespace CppCodeGeneratorSubsystem
         public void AddAlias(string _name, string returnType, string parameterType)
         {
             AddAlias(null, _name, returnType, parameterType);
+        }
+
+        public void AddEnum(string _namespace, string _enum)
+        {
+            Element element;
+            Element elementNested;
+            if (_namespace != null)
+            {
+                element = AddNamespace(_namespace);
+                elementNested = new Enumeration(_enum);
+                element.AddNested(elementNested);
+            }
+            else
+            {
+                base.Add(new Enumeration(_enum));
+            }
+
+        }
+        public void AddEnum(string _enum)
+        {
+            AddStruct(null, _enum);
         }
 
         public Element Find(string qialifiedName)

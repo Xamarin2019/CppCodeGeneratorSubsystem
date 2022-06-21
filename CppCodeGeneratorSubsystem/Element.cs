@@ -128,18 +128,22 @@ namespace CppCodeGeneratorSubsystem
                 case Namespace Namespace:
                     elementNew = new Namespace(Namespace.Name);
                     break;
+ 
+                case Struct Struct when (Struct is Struct):
+                    elementNew = new Struct(Struct.Name);
+                    break;
 
                 case Class Class when (Class is Class):
                     elementNew = new Class(Class.Name);
                     break;
 
-                case Struct Struct when (Struct is Struct):
-                    elementNew = new Struct(Struct.Name);
-                    break;
-
                 case Alias Alias:
                     //elementNew = new Alias(Alias.Name, Alias.Nested[0], Alias.Nested[1]);
                     elementNew = new Alias(Alias.Name);
+                    break;
+
+                case Enumeration Enum:
+                    elementNew = new Enumeration(Enum.Name);
                     break;
 
                 default:
@@ -152,14 +156,20 @@ namespace CppCodeGeneratorSubsystem
 
         Element CopyParent()
         {
-            Element element = this, elementNew;
+            Element element = this, elementNew, elementTmp, elementParent;
  
-             elementNew = CopyThis();
+             elementNew = elementTmp = CopyThis();
                     
 
             if (elementNew != null)
             {
-                if (element.Parent != null) element.Parent.CopyThis().AddNested(elementNew);
+                while (element.Parent != null)
+                {
+                    elementParent = element.Parent.CopyThis();
+                    elementParent.AddNested(elementTmp);
+                    elementTmp = elementParent;
+                    element = element.Parent;
+                }
              }
 
             return elementNew;
@@ -218,15 +228,9 @@ namespace CppCodeGeneratorSubsystem
 
     public class Struct : Element
     {
-        public Struct(string name) : base(name)
-        {
+        public Struct(string name) : base(name) { }
 
-        }
-        public override string ToString()
-        {
-            return $"{Template}struct {bareName};" + Environment.NewLine;
-        }
-
+        public override string ToString() => $"{Template}struct {bareName};" + Environment.NewLine;
     }
 
     public class Alias : Element
@@ -267,6 +271,18 @@ namespace CppCodeGeneratorSubsystem
                 return $"using {bareName} = {Nested[0]?.QualifiedName ?? "Unknown"}* (*)(Unknown);" + Environment.NewLine;
             else
                 return $"using {bareName} = Unknown* (*)(Unknown);" + Environment.NewLine;
+        }
+    }
+
+    public class Enumeration : Element
+    {
+        public Enumeration(string name) : base(name)
+        {
+
+        }
+        public override string ToString()
+        {
+            return $"enum {bareName}{base.ToString()};" + Environment.NewLine;
         }
     }
 }
