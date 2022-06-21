@@ -136,14 +136,25 @@ namespace CppCodeGeneratorSubsystem
             typeName = typeName.Replace(" ", string.Empty);
             if (string.IsNullOrEmpty(typeName)) throw new FormatException("Parameter'typeName' can't be empty!");
             var names = typeName.Split("::");
-            string fileName = this.Where(d => d.Value.Exists(e => e.Name == names[0])).FirstOrDefault().Key;
+            //IEnumerable<KeyValuePair<string, ElementList>> files;
+            //foreach (var name in names)
+            //{
+            //     files = this.Where(d => d.Value.Exists(e => e.Name == name));
+            //}
 
-            if (fileName == null) return null;
+            var files = this.Where(d => d.Value.Exists(e => e.Name == names[0]));
+            if (files.Count() == 0) return null;
+            // string fileName = this.Where(d => d.Value.Exists(e => e.Name == names[0])).FirstOrDefault().Key;
+            //if (fileName == null) return null;
 
-            Element element = FindElement(fileName, typeName);
+            string fileName = null;
+            Element element = null;
+            foreach (var file in files)
+            {
+                element = FindElement(file.Key, typeName);
+                if (element != null) fileName = file.Key;
+            }
 
-            if (element == null) return null;
-         
             return fileName;
         }
     }
