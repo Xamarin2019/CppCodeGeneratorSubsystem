@@ -6,6 +6,7 @@ namespace CppCodeGeneratorSubsystem
 {
     public abstract class Element
     {
+        protected string indent = "", baseIndent = "    ";
         protected string bareName;
         public string Name { get; protected set; }
         public string QualifiedName { get; protected set; }
@@ -62,6 +63,7 @@ namespace CppCodeGeneratorSubsystem
             {
                 element.Parent = this;
                 element.QualifiedName = QualifiedName + "::" + element.QualifiedName;
+                element.indent = this.indent + baseIndent;
             }
             nested.Add(element);
         }
@@ -116,7 +118,7 @@ namespace CppCodeGeneratorSubsystem
 
         public override string ToString()
         {
-            string nestedTostring = Nested.Count != 0 ? Environment.NewLine + "{" + Environment.NewLine + "    " + string.Join("    ", Nested.Select(n => n.ToString())) + "}" + Environment.NewLine : "";
+            string nestedTostring = Nested.Count != 0 ? Environment.NewLine + indent + "{" + Environment.NewLine + indent + baseIndent + string.Join(baseIndent + indent, Nested.Select(n => n.ToString())) + indent + "}" + Environment.NewLine : "";
             return $"{nestedTostring}";
         }
 
